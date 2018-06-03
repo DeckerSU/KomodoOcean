@@ -1,3 +1,14 @@
+If you are compiling, this has the necessary lines to launch into EQL directly already in place. The release has not been repackaged
+yet, so you will need to go to the launch_assets folder and copy eql.cmd into the same folder when you unzip the release. Aside from that, as of 06/23/2018, no other changes are necessary or have been made. 
+
+We will be updating and retheming the wallet as we go along. Much Kudos to DeckerSU and the rest of the Komodo Team!
+Please follow the instructions below, noting that one thing is a bit unclear. The zcash params need to be in %APPDATA\roaming. Not directly in Appdata as it looks like below, and not in your Komodo directory. 
+
+Once the dependencies are in place, either create a shortcut to eql.cmd, or just open the launch_assets folder and click on it. KomodoOcean will launch and sync and be pretty!
+
+
+
+
 ## KomodoOcean (komodo-qt) ##
 
 ![](./images/image00.png)
