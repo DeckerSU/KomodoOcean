@@ -62,7 +62,7 @@ brew install protobuf
 brew install coreutils
 brew install wget
 # Clone the Komodo repo
-git clone https://github.com/DeckerSU/KomodoOcean --branch statoc --single-branch
+git clone https://github.com/DeckerSU/KomodoOcean --branch static --single-branch
 # Change master branch to other branch you wish to compile
 cd komodo
 ./zcutil/fetch-params.sh
