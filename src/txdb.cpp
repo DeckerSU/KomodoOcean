@@ -746,6 +746,9 @@ bool CBlockTreeDB::LoadBlockIndexGuts()
 //LogPrintf("loadguts ht.%d\n",pindexNew->GetHeight());
                 // Consistency checks
                 auto header = pindexNew->GetBlockHeader();
+                if (header.GetHash() != diskindex.GetBlockHash())
+                    return error("LoadBlockIndex(): inconsistent header vs diskindex hash: header hash = %s, diskindex hash = %s",
+                        header.GetHash().ToString(), diskindex.GetBlockHash().ToString());
                 if (header.GetHash() != pindexNew->GetBlockHash())
                     return error("LoadBlockIndex(): block header inconsistency detected: on-disk = %s, in-memory = %s",
                                  diskindex.ToString(),  pindexNew->ToString());
