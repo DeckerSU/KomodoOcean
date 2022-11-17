@@ -221,7 +221,7 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins,
 CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe, bool compression, int maxOpenFiles) : CDBWrapper(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe, compression, maxOpenFiles) {
 }
 
-bool CBlockTreeDB::ReadBlockFileInfo(int nFile, CBlockFileInfo &info) {
+bool CBlockTreeDB::ReadBlockFileInfo(int nFile, CBlockFileInfo &info) const {
     return Read(make_pair(DB_BLOCK_FILES, nFile), info);
 }
 
@@ -232,12 +232,12 @@ bool CBlockTreeDB::WriteReindexing(bool fReindexing) {
         return Erase(DB_REINDEX_FLAG);
 }
 
-bool CBlockTreeDB::ReadReindexing(bool &fReindexing) {
+bool CBlockTreeDB::ReadReindexing(bool &fReindexing) const {
     fReindexing = Exists(DB_REINDEX_FLAG);
     return true;
 }
 
-bool CBlockTreeDB::ReadLastBlockFile(int &nFile) {
+bool CBlockTreeDB::ReadLastBlockFile(int &nFile) const {
     return Read(DB_LAST_BLOCK, nFile);
 }
 
@@ -322,11 +322,11 @@ bool CBlockTreeDB::EraseBatchSync(const std::vector<const CBlockIndex*>& blockin
     return WriteBatch(batch, true);
 }
 
-bool CBlockTreeDB::ReadDiskBlockIndex(const uint256 &blockhash, CDiskBlockIndex &dbindex) {
+bool CBlockTreeDB::ReadDiskBlockIndex(const uint256 &blockhash, CDiskBlockIndex &dbindex) const {
     return Read(make_pair(DB_BLOCK_INDEX, blockhash), dbindex);
 }
 
-bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
+bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) const {
     return Read(make_pair(DB_TXINDEX, txid), pos);
 }
 
@@ -337,7 +337,7 @@ bool CBlockTreeDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos>
     return WriteBatch(batch);
 }
 
-bool CBlockTreeDB::ReadSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value) {
+bool CBlockTreeDB::ReadSpentIndex(CSpentIndexKey &key, CSpentIndexValue &value) const {
     return Read(make_pair(DB_SPENTINDEX, key), value);
 }
 
@@ -675,7 +675,7 @@ bool CBlockTreeDB::WriteTimestampBlockIndex(const CTimestampBlockIndexKey &block
     return WriteBatch(batch);
 }
 
-bool CBlockTreeDB::ReadTimestampBlockIndex(const uint256 &hash, unsigned int &ltimestamp) {
+bool CBlockTreeDB::ReadTimestampBlockIndex(const uint256 &hash, unsigned int &ltimestamp) const {
 
     CTimestampBlockIndexValue(lts);
     if (!Read(std::make_pair(DB_BLOCKHASHINDEX, hash), lts))
@@ -689,7 +689,7 @@ bool CBlockTreeDB::WriteFlag(const std::string &name, bool fValue) {
     return Write(std::make_pair(DB_FLAG, name), fValue ? '1' : '0');
 }
 
-bool CBlockTreeDB::ReadFlag(const std::string &name, bool &fValue) {
+bool CBlockTreeDB::ReadFlag(const std::string &name, bool &fValue) const {
     char ch;
     if (!Read(std::make_pair(DB_FLAG, name), ch))
         return false;
