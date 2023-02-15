@@ -77,8 +77,9 @@ class Eval
 public:
     CValidationState state;
 
-    bool Invalid(std::string s) { return state.Invalid(false, 0, s); }
+    bool Invalid(std::string s) { return state.Invalid(false, 100, s); }  // set by default DoS to 100
     bool Error(std::string s) { return state.Error(s); }
+    bool Invalid(std::string s, int nDoS) { return state.Invalid(false, nDoS, s); } // allow to set DoS
     bool Valid() { return true; }
 
     /*
@@ -132,9 +133,14 @@ public:
             [](Eval* e){if (e!=EVAL_TEST) delete e;}) { }
 };
 
-
-
-bool RunCCEval(const CC *cond, const CTransaction &tx, unsigned int nIn);
+/**
+ * run cc validators for evalcodes in the cond
+ * @param cond cryptocondition from a tx cc input
+ * @param tx transaction
+ * @param nIn tx input index
+ * @param[out] pstateCC ptr to output CValidationState set by the evalcode validator (optional)
+ */ 
+bool RunCCEval(const CC *cond, const CTransaction &tx, unsigned int nIn, CValidationState *pstateCC = nullptr);
 
 
 /*

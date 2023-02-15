@@ -38,6 +38,7 @@
 #include "script/serverchecker.h"
 #include "script/standard.h"
 #include "script/script_ext.h"
+#include "consensus/validation.h"
 #include "spentindex.h"
 #include "sync.h"
 #include "tinyformat.h"
@@ -773,6 +774,7 @@ private:
     uint32_t consensusBranchId;
     ScriptError error;
     PrecomputedTransactionData *txdata;
+    CValidationState stateCC;
 
 public:
     CScriptCheck(): amount(0), ptxTo(0), nIn(0), nFlags(0), cacheStore(false), consensusBranchId(0), error(SCRIPT_ERR_UNKNOWN_ERROR) {}
@@ -792,9 +794,11 @@ public:
         std::swap(consensusBranchId, check.consensusBranchId);
         std::swap(error, check.error);
         std::swap(txdata, check.txdata);
+        std::swap(stateCC, check.stateCC);
     }
 
     ScriptError GetScriptError() const { return error; }
+    bool IsInvalidCC(int &nDoSOut) const { return stateCC.IsInvalid(nDoSOut); }
 };
 
 bool GetTimestampIndex(const unsigned int &high, const unsigned int &low, const bool fActiveOnly, std::vector<std::pair<uint256, unsigned int> > &hashes);

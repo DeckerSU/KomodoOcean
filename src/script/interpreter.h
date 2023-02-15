@@ -24,6 +24,8 @@
 #include "script_error.h"
 #include "primitives/transaction.h"
 #include "script/cc.h"
+#include "../consensus/validation.h"
+
 
 #include <vector>
 #include <stdint.h>
@@ -150,7 +152,8 @@ public:
             const std::vector<unsigned char>& condBin,
             const std::vector<unsigned char>& ffillBin,
             const CScript& scriptCode,
-            uint32_t consensusBranchId) const
+            uint32_t consensusBranchId,
+            CValidationState *pstateCC = NULL) const
     {
         return false;
     }
@@ -173,12 +176,13 @@ public:
     TransactionSignatureChecker(const CTransaction* txToIn, unsigned int nInIn, const CAmount& amountIn, const PrecomputedTransactionData& txdataIn) : txTo(txToIn), nIn(nInIn), amount(amountIn), txdata(&txdataIn) {}
     bool CheckSig(const std::vector<unsigned char>& scriptSig, const std::vector<unsigned char>& vchPubKey, const CScript& scriptCode, uint32_t consensusBranchId) const;
     bool CheckLockTime(const CScriptNum& nLockTime) const;
-    int CheckCryptoCondition(
+    virtual int CheckCryptoCondition(
         const std::vector<unsigned char>& condBin,
         const std::vector<unsigned char>& ffillBin,
         const CScript& scriptCode,
-        uint32_t consensusBranchId) const;
-    virtual int CheckEvalCondition(const CC *cond) const;
+        uint32_t consensusBranchId, 
+        CValidationState *pstateCC = NULL) const;
+    virtual int CheckEvalCondition(const CC *cond, CValidationState *pstateCC = NULL) const;
 };
 
 class MutableTransactionSignatureChecker : public TransactionSignatureChecker
@@ -196,12 +200,14 @@ bool EvalScript(
     unsigned int flags,
     const BaseSignatureChecker& checker,
     uint32_t consensusBranchId,
-    ScriptError* error = NULL);
+    ScriptError* error = NULL,
+    CValidationState *pstateCC = NULL);
 bool VerifyScript(
     const CScript& scriptSig,
     const CScript& scriptPubKey,
     unsigned int flags,
     const BaseSignatureChecker& checker,
     uint32_t consensusBranchId,
-    ScriptError* serror = NULL);
+    ScriptError* serror = NULL,
+    CValidationState *pstateCC = NULL);
 #endif // BITCOIN_SCRIPT_INTERPRETER_H

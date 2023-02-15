@@ -2791,7 +2791,7 @@ void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, int nHeight)
 bool CScriptCheck::operator()() {
     const CScript &scriptSig = ptxTo->vin[nIn].scriptSig;
     ServerTransactionSignatureChecker checker(ptxTo, nIn, amount, cacheStore, *txdata);
-    if (!VerifyScript(scriptSig, scriptPubKey, nFlags, checker, consensusBranchId, &error)) {
+    if (!VerifyScript(scriptSig, scriptPubKey, nFlags, checker, consensusBranchId, &error, &stateCC)) {
         return ::error("CScriptCheck(): %s:%d VerifySignature failed: %s", ptxTo->GetHash().ToString(), nIn, ScriptErrorString(error));
     }
     return true;
@@ -2966,7 +2966,9 @@ bool ContextualCheckInputs(
                     // as to the correct behavior - we may want to continue
                     // peering with non-upgraded nodes even after a soft-fork
                     // super-majority vote has passed.
-                    return state.DoS(100,false, REJECT_INVALID, strprintf("mandatory-script-verify-flag-failed (%s)", ScriptErrorString(check.GetScriptError())));
+                    int nDoS = 100;
+                    check.IsInvalidCC(nDoS); // allow cc override DoS level
+                    return state.DoS(nDoS,false, REJECT_INVALID, strprintf("mandatory-script-verify-flag-failed (%s)", ScriptErrorString(check.GetScriptError())));
                 }
             }
         }

@@ -35,12 +35,16 @@ Eval* EVAL_TEST = 0;
 struct CCcontract_info CCinfos[0x100];
 extern pthread_mutex_t KOMODO_CC_mutex;
 
-bool RunCCEval(const CC *cond, const CTransaction &tx, unsigned int nIn)
+bool RunCCEval(const CC *cond, const CTransaction &tx, unsigned int nIn, CValidationState *pstateCC)
 {
     EvalRef eval;
     pthread_mutex_lock(&KOMODO_CC_mutex);
     bool out = eval->Dispatch(cond, tx, nIn);
     pthread_mutex_unlock(&KOMODO_CC_mutex);
+
+    if (pstateCC)   {
+        *pstateCC = eval->state; // return cc validation state
+    }
     if ( eval->state.IsValid() != out)
         LogPrintf("out %d vs %d isValid\n",(int32_t)out,(int32_t)eval->state.IsValid());
     //assert(eval->state.IsValid() == out);

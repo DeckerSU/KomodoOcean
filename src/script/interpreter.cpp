@@ -259,7 +259,8 @@ bool EvalScript(
     unsigned int flags,
     const BaseSignatureChecker& checker,
     uint32_t consensusBranchId,
-    ScriptError* serror)
+    ScriptError* serror,
+    CValidationState *pstateCC)
 {
     static const CScriptNum bnZero(0);
     static const CScriptNum bnOne(1);
@@ -971,8 +972,8 @@ bool EvalScript(
 
                     if (stack.size() < 2)
                         return set_error(serror, SCRIPT_ERR_INVALID_STACK_OPERATION);
-                    //LogPrintf("check cryptocondition\n");
-                    int fResult = checker.CheckCryptoCondition(stacktop(-1), stacktop(-2), script, consensusBranchId);
+                    //LogPrintf"check cryptocondition\n");
+                    int fResult = checker.CheckCryptoCondition(stacktop(-1), stacktop(-2), script, consensusBranchId, pstateCC);
                     if (fResult == -1) {
                         return set_error(serror, SCRIPT_ERR_CRYPTOCONDITION_INVALID_FULFILLMENT);
                     }
@@ -1358,12 +1359,17 @@ bool TransactionSignatureChecker::CheckSig(
     return true;
 }
 
+typedef struct {
+    const TransactionSignatureChecker *checker;
+    CValidationState *pstateCC;
+} EVAL_STATE_CONTEXT;
 
 int TransactionSignatureChecker::CheckCryptoCondition(
         const std::vector<unsigned char>& condBin,
         const std::vector<unsigned char>& ffillBin,
         const CScript& scriptCode,
-        uint32_t consensusBranchId) const
+        uint32_t consensusBranchId,
+        CValidationState *pstateCC) const
 {
     // Hash type is one byte tacked on to the end of the fulfillment
     if (ffillBin.empty())
@@ -1392,20 +1398,22 @@ int TransactionSignatureChecker::CheckCryptoCondition(
         LogPrintf("%02x",((uint8_t *)&sighash)[z]);
     LogPrintf(" sighash nIn.%d nHashType.%d %.8f id.%d\n",(int32_t)nIn,(int32_t)nHashType,(double)amount/COIN,(int32_t)consensusBranchId);
      */
-    VerifyEval eval = [] (CC *cond, void *checker) {
+    VerifyEval eval = [] (CC *cond, void *pctx) {
+        EVAL_STATE_CONTEXT *pstate_ctx = (EVAL_STATE_CONTEXT *)pctx;
         //LogPrintf("checker.%p\n",(TransactionSignatureChecker*)checker);
-        return ((TransactionSignatureChecker*)checker)->CheckEvalCondition(cond);
+        return pstate_ctx->checker->CheckEvalCondition(cond, pstate_ctx->pstateCC);
     };
     //LogPrintf("non-checker path\n");
+    EVAL_STATE_CONTEXT ctx { this,  pstateCC }; 
     int out = cc_verify(cond, (const unsigned char*)&sighash, 32, 0,
-                        condBin.data(), condBin.size(), eval, (void*)this);
+                        condBin.data(), condBin.size(), eval, (void*)&ctx);
     //LogPrintf("out.%d from cc_verify\n",(int32_t)out);
     cc_free(cond);
     return out;
 }
 
 
-int TransactionSignatureChecker::CheckEvalCondition(const CC *cond) const
+int TransactionSignatureChecker::CheckEvalCondition(const CC *cond, CValidationState *pstateCC) const
 {
     //LogPrintf( "Cannot check crypto-condition Eval outside of server, returning true in pre-checks\n");
     return true;
@@ -1492,7 +1500,8 @@ bool VerifyScript(
     unsigned int flags,
     const BaseSignatureChecker& checker,
     uint32_t consensusBranchId,
-    ScriptError* serror)
+    ScriptError* serror,
+    CValidationState *pstateCC)
 {
     set_error(serror, SCRIPT_ERR_UNKNOWN_ERROR);
 
@@ -1506,12 +1515,12 @@ bool VerifyScript(
             // serror is set
             return false;
     }
-    else if (!EvalScript(stack, scriptSig, flags, checker, consensusBranchId, serror))
+    else if (!EvalScript(stack, scriptSig, flags, checker, consensusBranchId, serror, pstateCC))
         // serror is set
         return false;
     if (flags & SCRIPT_VERIFY_P2SH)
         stackCopy = stack;
-    if (!EvalScript(stack, scriptPubKey, flags, checker, consensusBranchId, serror))
+    if (!EvalScript(stack, scriptPubKey, flags, checker, consensusBranchId, serror, pstateCC))
         // serror is set
         return false;
     if (stack.empty())
