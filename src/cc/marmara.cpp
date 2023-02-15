@@ -2421,6 +2421,7 @@ bool MarmaraValidate(struct CCcontract_info *cp, Eval* eval, const CTransaction 
     CPubKey Marmarapk = GetUnspendable(cp, 0);
     std::string validationError;
     std::set<uint8_t> funcIds;
+    int nDoS = 100; // DoS level by default
 
     for (int32_t i = 0; i < tx.vout.size(); i++)
     {
@@ -2564,11 +2565,13 @@ bool MarmaraValidate(struct CCcontract_info *cp, Eval* eval, const CTransaction 
         {
             if (check_settlement_tx(tx, validationError))
                 return true;
+            nDoS = 0;   // do not ban settlement tx
         }
         else if (funcIds == std::set<uint8_t>{MARMARA_SETTLE_PARTIAL}) // insufficient settlement
         {
             if (check_settlement_tx(tx, validationError))
                 return true;
+            nDoS = 0;   // do not ban settlement tx
         }
         else if (funcIds == std::set<uint8_t>{MARMARA_COINBASE} || funcIds == std::set<uint8_t>{MARMARA_COINBASE_3X }) // coinbase 
         {
@@ -2602,7 +2605,7 @@ bool MarmaraValidate(struct CCcontract_info *cp, Eval* eval, const CTransaction 
         validationError = "invalid funcid combination";
         
     LOGSTREAMFN("marmara", CCLOG_ERROR, stream << " validation error '" << validationError << "' for tx=" << HexStr(E_MARSHAL(ss << tx)) << std::endl);
-    return eval->Error(validationError);
+    return eval->Invalid(validationError, nDoS);
 }
 // end of consensus code
 
