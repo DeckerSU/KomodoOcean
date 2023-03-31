@@ -32,6 +32,7 @@
 
 class CBlockFileInfo;
 class CBlockIndex;
+class CDiskBlockIndex;
 struct CDiskTxPos;
 struct CAddressUnspentKey;
 struct CAddressUnspentValue;
