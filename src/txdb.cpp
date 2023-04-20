@@ -762,26 +762,27 @@ bool CBlockTreeDB::LoadBlockIndexGuts()
                 pindexNew->nSaplingValue  = diskindex.nSaplingValue;
                 pindexNew->segid          = diskindex.segid;
                 pindexNew->nNotaryPay     = diskindex.nNotaryPay;
-//LogPrintf("loadguts ht.%d\n",pindexNew->GetHeight());
-                // Consistency checks
-                CBlockHeader header;
-                {
-                    LOCK(cs_main);
-                    try {
-                        header = pindexNew->GetBlockHeader();
-                    } catch (const runtime_error&) {
-                        return error("LoadBlockIndex(): failed to read index entry: diskindex hash = %s",
-                            diskindex.GetBlockHash().ToString());
-                    }
-                }
-                if (header.GetHash() != diskindex.GetBlockHash())
-                    return error("LoadBlockIndex(): inconsistent header vs diskindex hash: header hash = %s, diskindex hash = %s",
-                        header.GetHash().ToString(), diskindex.GetBlockHash().ToString());
-                if (header.GetHash() != pindexNew->GetBlockHash())
-                    return error("LoadBlockIndex(): block header inconsistency detected: on-disk = %s, in-memory = %s",
-                                 diskindex.ToString(),  pindexNew->ToString());
+//LogPrintf("loadguts ht.%d\n",pindexNew->nHeight);
                 if ( 0 ) // POW will be checked before any block is connected
                 {
+                    // Consistency checks
+                    CBlockHeader header;
+                    {
+                        LOCK(cs_main);
+                        try {
+                            header = pindexNew->GetBlockHeader();
+                        } catch (const runtime_error&) {
+                            return error("LoadBlockIndex(): failed to read index entry: diskindex hash = %s",
+                                diskindex.GetBlockHash().ToString());
+                        }
+                    }
+                    if (header.GetHash() != diskindex.GetBlockHash())
+                        return error("LoadBlockIndex(): inconsistent header vs diskindex hash: header hash = %s, diskindex hash = %s",
+                            header.GetHash().ToString(), diskindex.GetBlockHash().ToString());
+                    if (header.GetHash() != pindexNew->GetBlockHash())
+                        return error("LoadBlockIndex(): block header inconsistency detected: on-disk = %s, in-memory = %s",
+                                    diskindex.ToString(),  pindexNew->ToString());
+
                     uint8_t pubkey33[33];
                     komodo_index2pubkey33(pubkey33,pindexNew,pindexNew->GetHeight());
                     if (!CheckProofOfWork(header,pubkey33,pindexNew->GetHeight(),Params().GetConsensus()))
