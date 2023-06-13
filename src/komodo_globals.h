@@ -53,6 +53,9 @@ const int32_t nS5HardforkHeight = 2437300;  //dPoW Season 5 Monday, June 14th, 2
 const uint32_t nS6Timestamp = 1656077853;  // dPoW Season 6 Fri Jun 24 2022 13:37:33 GMT+0000
 const int32_t nS6HardforkHeight = 2963330; // estimated June 24 2022
 
+const uint32_t nS7Timestamp = 1688132253;   // dPoW Season 7, Fri Jun 30 2023 13:37:33 GMT+0000
+const int32_t nS7HardforkHeight = 3484958;  // dPoW Season 7, Fri Jun 30 2023
+
 #define _COINBASE_MATURITY 100
 int COINBASE_MATURITY = _COINBASE_MATURITY;//100;
 unsigned int WITNESS_CACHE_SIZE = _COINBASE_MATURITY+10;
