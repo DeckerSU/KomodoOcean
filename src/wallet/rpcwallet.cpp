@@ -7836,6 +7836,8 @@ extern UniValue importprivkey(const UniValue& params, bool fHelp, const CPubKey&
 extern UniValue importaddress(const UniValue& params, bool fHelp, const CPubKey& mypk);
 extern UniValue dumpwallet(const UniValue& params, bool fHelp, const CPubKey& mypk);
 extern UniValue importwallet(const UniValue& params, bool fHelp, const CPubKey& mypk);
+extern UniValue importprunedfunds(const UniValue& params, bool fHelp, const CPubKey& mypk);
+extern UniValue removeprunedfunds(const UniValue& params, bool fHelp, const CPubKey& mypk);
 extern UniValue z_exportkey(const UniValue& params, bool fHelp, const CPubKey& mypk);
 extern UniValue z_importkey(const UniValue& params, bool fHelp, const CPubKey& mypk);
 extern UniValue z_exportviewingkey(const UniValue& params, bool fHelp, const CPubKey& mypk);
@@ -7871,6 +7873,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "importprivkey",            &importprivkey,            true  },
     { "wallet",             "importwallet",             &importwallet,             true  },
     { "wallet",             "importaddress",            &importaddress,            true  },
+    { "wallet",             "importprunedfunds",        &importprunedfunds,        true  },
     { "wallet",             "keypoolrefill",            &keypoolrefill,            true  },
     { "wallet",             "listaccounts",             &listaccounts,             false },
     { "wallet",             "listaddressgroupings",     &listaddressgroupings,     false },
@@ -7882,6 +7885,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listunspent",              &listunspent,              false },
     { "wallet",             "lockunspent",              &lockunspent,              true  },
     { "wallet",             "move",                     &movecmd,                  false },
+    { "wallet",             "removeprunedfunds",        &removeprunedfunds,        true  },
     { "wallet",             "sendfrom",                 &sendfrom,                 false },
     { "wallet",             "sendmany",                 &sendmany,                 false },
     { "wallet",             "sendtoaddress",            &sendtoaddress,            false },

@@ -658,7 +658,8 @@ uint256 BitcoinGetProofMerkleRoot(const std::vector<uint8_t> &proofData, std::ve
     CMerkleBlock merkleBlock;
     if (!E_UNMARSHAL(proofData, ss >> merkleBlock))
         return uint256();
-    return merkleBlock.txn.ExtractMatches(txids);
+    std::vector<unsigned int> vIndex;
+    return merkleBlock.txn.ExtractMatches(txids, vIndex);
 }
 
 extern struct NSPV_inforesp NSPV_inforesult;

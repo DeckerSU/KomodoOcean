@@ -416,12 +416,13 @@ bool CrossChain::CheckNotariesApproval(uint256 burntxid, const std::vector<uint2
                 if (E_UNMARSHAL(vopret, ss >> txoutproof)) {
                     CMerkleBlock merkleBlock;
                     std::vector<uint256> prooftxids;
+                    std::vector<unsigned int> vIndex;
                     // extract block's merkle tree
                     if (E_UNMARSHAL(txoutproof, ss >> merkleBlock)) {
 
                         // extract proven txids:
-                        merkleBlock.txn.ExtractMatches(prooftxids);
-                        if (merkleBlock.txn.ExtractMatches(prooftxids) != merkleBlock.header.hashMerkleRoot ||  // check block merkle root is correct
+                        merkleBlock.txn.ExtractMatches(prooftxids, vIndex);
+                        if (merkleBlock.txn.ExtractMatches(prooftxids, vIndex) != merkleBlock.header.hashMerkleRoot ||  // check block merkle root is correct
                             std::find(prooftxids.begin(), prooftxids.end(), burntxid) != prooftxids.end()) {    // check burn txid is in proven txids list
                             
                             if (komodo_notaries(notaries_pubkeys, block.nHeight, block.GetBlockTime()) >= 0) {

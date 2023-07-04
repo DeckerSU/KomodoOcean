@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin Core developers
+// Copyright (c) 2009-2015 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -82,7 +82,7 @@ protected:
         return (nTransactions+(1 << height)-1) >> height;
     }
 
-    /** calculate the hash of a node in the merkle tree (at leaf level: the txid itself) */
+    /** calculate the hash of a node in the merkle tree (at leaf level: the txid's themselves) */
     uint256 CalcHash(int height, unsigned int pos, const std::vector<uint256> &vTxid);
 
     /** recursive function that traverses tree nodes, storing the data as bits and hashes */
@@ -90,9 +90,9 @@ protected:
 
     /**
      * recursive function that traverses tree nodes, consuming the bits and hashes produced by TraverseAndBuild.
-     * it returns the hash of the respective node.
+     * it returns the hash of the respective node and its respective index.
      */
-    uint256 TraverseAndExtract(int height, unsigned int pos, unsigned int &nBitsUsed, unsigned int &nHashUsed, std::vector<uint256> &vMatch);
+    uint256 TraverseAndExtract(int height, unsigned int pos, unsigned int &nBitsUsed, unsigned int &nHashUsed, std::vector<uint256> &vMatch, std::vector<unsigned int> &vnIndex);
 
 public:
 
@@ -125,10 +125,11 @@ public:
     CPartialMerkleTree();
 
     /**
-     * extract the matching txid's represented by this partial merkle tree.
+     * extract the matching txid's represented by this partial merkle tree
+     * and their respective indices within the partial tree.
      * returns the merkle root, or 0 in case of failure
      */
-    uint256 ExtractMatches(std::vector<uint256> &vMatch);
+    uint256 ExtractMatches(std::vector<uint256> &vMatch, std::vector<unsigned int> &vnIndex);
 };
 
 

@@ -663,10 +663,11 @@ UniValue migrate_createnotaryapprovaltransaction(const UniValue& params, bool fH
     std::vector<uint8_t> proofData = ParseHex(params[1].get_str());
     CMerkleBlock merkleBlock;
     std::vector<uint256> prooftxids;
+    std::vector<unsigned int> vIndex;
     if (!E_UNMARSHAL(proofData, ss >> merkleBlock))
         throw runtime_error("Couldn't parse txoutproof");
 
-    merkleBlock.txn.ExtractMatches(prooftxids);
+    merkleBlock.txn.ExtractMatches(prooftxids, vIndex);
     if (std::find(prooftxids.begin(), prooftxids.end(), burntxid) == prooftxids.end())
         throw runtime_error("No burntxid in txoutproof");
 
