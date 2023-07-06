@@ -144,9 +144,6 @@ public:
     // network and disk
     std::vector<CTransaction> vtx;
 
-    // memory only
-    mutable std::vector<uint256> vMerkleTree;
-
     CBlock()
     {
         SetNull();
@@ -170,7 +167,6 @@ public:
     {
         CBlockHeader::SetNull();
         vtx.clear();
-        vMerkleTree.clear();
     }
 
     CBlockHeader GetBlockHeader() const
