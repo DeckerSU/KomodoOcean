@@ -368,6 +368,11 @@ UniValue importprunedfunds(const UniValue& params, bool fHelp, const CPubKey& my
     wtx.nIndex = txnIndex;
     wtx.hashBlock = merkleBlock.header.GetHash();
 
+    // currently importprunedfunds supports only transparent (t->t) transactions
+    if (tx.vjoinsplit.size() > 0 || tx.vShieldedSpend.size() > 0 || tx.vShieldedOutput.size() > 0) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Transaction given contains sprout or sapling note data");
+    }
+
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
     if (pwalletMain->IsMine(tx)) {
