@@ -740,7 +740,6 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, uint8_t *pubkey33, int32_t 
 
             if ( (flag != 0 || special2 > 0) && special2 != -2 )
             {
-                //LogPrintf("EASY MINING ht.%d\n",height);
                 bnTarget.SetCompact(KOMODO_MINDIFF_NBITS,&fNegative,&fOverflow);
             }
         }

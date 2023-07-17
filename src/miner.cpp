@@ -1362,16 +1362,13 @@ void static BitcoinMiner()
                                 break;
                         if ( j == 65 )
                             KOMODO_LASTMINED = 0;
-                    } else LogPrintf("ht.%i all NN are elegible\n",Mining_height); //else LogPrintf("no nonz pubkeys\n");
-
-                    if ((Mining_height >= 235300 && Mining_height < 236000) ||
-                        (j == 65 && Mining_height > KOMODO_MAYBEMINED + 1 && Mining_height > KOMODO_LASTMINED + 64))
+                    } else LogPrintf("ht.%i all NN are elegible\n",Mining_height); //else LogPrintf("no nonz pubkeys\n"); 
+                    
+                    if ( (Mining_height >= 235300 && Mining_height < 236000) || (j == 65 && Mining_height > KOMODO_MAYBEMINED+1 && Mining_height > KOMODO_LASTMINED+64) )
                     {
                         HASHTarget = arith_uint256().SetCompact(KOMODO_MINDIFF_NBITS);
-                        LogPrintf("I am the chosen one for %s ht.%d\n", chainName.symbol().c_str(), pindexPrev->nHeight + 1);
-                    }
-                    else
-                        LogPrintf("duplicate at j.%d\n", j);
+                        LogPrintf("I am the chosen one for %s ht.%d\n",chainName.symbol().c_str(),pindexPrev->nHeight+1);
+                    } else LogPrintf("duplicate at j.%d\n",j);
 
                     /* check if hf22 rule can be applied */
                     const Consensus::Params &params = chainparams.GetConsensus();

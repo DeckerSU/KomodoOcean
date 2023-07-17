@@ -127,10 +127,10 @@ void komodo_event_undo(komodo_state *sp, T& ev)
 
 template<>
 void komodo_event_undo(komodo_state* sp, komodo::event_kmdheight& ev)
-    {
+{
     if ( ev.height <= sp->SAVEDHEIGHT )
         sp->SAVEDHEIGHT = ev.height;
-    }
+}
  
 
 
