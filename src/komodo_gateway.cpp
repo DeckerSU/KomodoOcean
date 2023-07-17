@@ -88,7 +88,13 @@ int32_t komodo_bannedset(int32_t *indallvoutsp,uint256 *array,int32_t max)
 }
 
 /***
- * @brief  verify block is valid pax pricing
+ * @brief verify block:
+ * if any block tx spends one from the 'banned' set - do not allow to spend banned vouts.
+ * For KMD network: if last tx in the block has valid notary deposit value and has a vin that matches to the coinbase scriptpubkey 
+ * then the block is considered valid (potentially valid for easy mining).
+ * If above is not true and coinbase is sent to a notary then the block is invalid (not proved to created by a notary and not valid for easy mining).
+ * 
+ * For asset chains with commission or founders reward check the commission
  * @param height the height of the block
  * @param block the block to check
  * @returns <0 on error, 0 on success
@@ -130,7 +136,10 @@ int32_t komodo_check_deposit(int32_t height,const CBlock& block)
                     if ( fNotaryProofVinTxFound 
                             && block.vtx[0].vout[0].scriptPubKey == tx.vout[block.vtx[txn_count-1].vin[0].prevout.n].scriptPubKey )
                     {
-                        notmatched = 1;
+                        notmatched = 1; // we have a 'notary proof' vin:
+                                        // the last tx vin[0] destination equals to the coinbase destination 
+                                        // assuming if the coinbase destination is a notary then this vin serves as a proof that this notary created the block 
+                                        // so the block will be valid for being easy mined
                     }
                 }  
             }
@@ -166,7 +175,7 @@ int32_t komodo_check_deposit(int32_t height,const CBlock& block)
                 break;
             }
             if ( i > 1 && script[0] != 0x6a && val < 5000 )
-                strangeout++;
+                strangeout++;   // we have 'strange' coinbase output: not an opreturn and small value
             total += val;
             if ( total < prevtotal || (val != 0 && total == prevtotal) )
             {
@@ -198,16 +207,19 @@ int32_t komodo_check_deposit(int32_t height,const CBlock& block)
                     LogPrintf(">>>>>>>>>>>>> DUST ht.%d strangout.%d notmatched.%d <<<<<<<<<\n",height,strangeout,notmatched);
                 if ( height > 1000000 && strangeout != 0 )
                     return(-1);
+                // we are here if there is a valid notary proof vin (and no 'strange' coinbase outputs) then this block is 'valid'' 
             }
             else if ( height > 814000 )
             {
                 uint8_t *script = (uint8_t *)&block.vtx[0].vout[0].scriptPubKey[0];
                 int32_t num;
+                // if no 'notary proof' vin but coinbase is sent to a notary then block is invalid
                 return(-1 * (komodo_electednotary(&num,script+1,height,0) >= 0) * (height > 1000000));
             }
         }
         else
         {
+            // checks for assets chains with commission or founders rewards
             int64_t checktoshis = 0;
             if ( (ASSETCHAINS_COMMISSION != 0 || ASSETCHAINS_FOUNDERS_REWARD) && height > 1 )
             {

@@ -272,7 +272,9 @@ class komodo_state
 {
 public:
     std::string symbol;
+    // seems to this variable should be set according to chain tip moving forward and backward but is never used
     int32_t SAVEDHEIGHT;
+    // this variable is set to the highest ever block height (so if the chain reorgs to a lower height the CURRENT_HEIGHT will not change).
     int32_t CURRENT_HEIGHT;
     uint32_t SAVEDTIMESTAMP;
     uint64_t deposited;
@@ -283,11 +285,20 @@ public:
     uint64_t shorted;
     std::list<std::shared_ptr<komodo::event>> events;
     uint32_t RTbufs[64][3]; uint64_t RTmask;
+
+    /// @brief add a event to the event list in memory. The event list will be used to rewind events if the chain reorgs.
+    /// This is done only for asset chains
+    /// @tparam T event class
+    /// @param symbol 
+    /// @param height 
+    /// @param in event type
+    /// @return 
     template<class T>
     bool add_event(const std::string& symbol, const uint32_t height, T& in)
     {
         if (!chainName.isKMD())
         {
+            // only for asset chains
             std::shared_ptr<T> ptr = std::make_shared<T>( in );
             std::lock_guard<std::mutex> lock(komodo_mutex);
             events.push_back( ptr );
@@ -303,19 +314,29 @@ protected:
      */
     void clear_checkpoints();
     std::vector<notarized_checkpoint> NPOINTS; // collection of notarizations
-    mutable size_t NPOINTS_last_index = 0; // caches checkpoint linear search position
+    mutable size_t NPOINTS_last_index = 0; // caches checkpoint linear search position (this is no the last nota, this is just to help to make next search faster)
     notarized_checkpoint last;
 
 public:
+    // get the last notarised block hash 
     const uint256 &LastNotarizedHash() const;
+    // store the last notarised block hash 
     void SetLastNotarizedHash(const uint256 &in);
+    // get txid of the transaction with the last notarization data in its opreturn
     const uint256 &LastNotarizedDestTxId() const;
+    // store txid of the transaction with the last notarization data in its opreturn
     void SetLastNotarizedDestTxId(const uint256 &in);
+    // get MoM from the last notarization data
     const uint256 &LastNotarizedMoM() const;
+    // store MoM from the last notarization data
     void SetLastNotarizedMoM(const uint256 &in);
+    // get last notarized height 
     const int32_t &LastNotarizedHeight() const;
+    // store last notarized height 
     void SetLastNotarizedHeight(const int32_t in);
+    // get MoM depth (number of blocks in the MoM) from the last notarization data
     const int32_t &LastNotarizedMoMDepth() const;
+    // store MoM depth (number of blocks in the MoM) from the last notarization data
     void SetLastNotarizedMoMDepth(const int32_t in);
 
     /*****

@@ -163,7 +163,8 @@ int32_t komodo_nextheight();
 int32_t komodo_isrealtime(int32_t *kmdheightp);
 
 /*******
- * @brief validate interest in processing a transaction
+ * @brief validate transaction lock time so it is not too old (no more than approx 1 hour earlier than last block time). 
+ * This is important for komodo interest calculation
  * @param tx the transaction
  * @param txheight the desired chain height to evaluate
  * @param cmptime the block time (often the median block time of a chunk of recent blocks)

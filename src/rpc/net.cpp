@@ -177,6 +177,10 @@ UniValue getpeerinfo(const UniValue& params, bool fHelp, const CPubKey& mypk)
 }
 
 int32_t KOMODO_LONGESTCHAIN;
+
+/// @brief Updates and returns the longest chain height, collected from connected peers.
+/// Should be used for informational purposes only as it may return not actual value, if f.e. some peer is on fork and has advanced higher than other peers
+/// @return longest chain height
 int32_t komodo_longestchain()
 {
     static int32_t depth;

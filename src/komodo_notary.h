@@ -48,10 +48,10 @@ int32_t getacseason(uint32_t timestamp);
 int32_t ht_index_from_height(int32_t height);
 
 /***
- * @brief Given a height or timestamp, get the appropriate notary keys
+ * @brief Given a height or timestamp, get the acting notary key list, both for genesis or elected notaries
  * @param[out] pubkeys the results
- * @param[in] height the height
- * @param[in] timestamp the timestamp
+ * @param[in] height the height (used if this is KMD chain)
+ * @param[in] timestamp the timestamp (used if this is an asset chain)
  * @returns the number of notaries
  */
 int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t height,uint32_t timestamp);
@@ -119,7 +119,6 @@ void komodo_notarized_update(struct komodo_state *sp,int32_t nHeight,int32_t not
 void komodo_init(int32_t height);
 
 
-int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t height,uint32_t timestamp);
 void komodo_notarysinit(int32_t origheight,uint8_t pubkeys[64][33],int32_t num);
 void komodo_notaries_uninit(); // gets rid of values stored in statics
 void komodo_statefile_uninit(); // closes statefile

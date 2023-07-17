@@ -27,6 +27,8 @@ static FILE *fp; // for stateupdate
 #include "komodo_events.h"
 #include "komodo_ccdata.h"
 
+/// Yet another func to set CURRENT_HEIGHT in the komodo_state
+/// See also komodo_setkmdheight
 void komodo_currentheight_set(int32_t height)
 {
     char symbol[KOMODO_ASSETCHAIN_MAXLEN],dest[KOMODO_ASSETCHAIN_MAXLEN]; struct komodo_state *sp;
@@ -36,6 +38,7 @@ void komodo_currentheight_set(int32_t height)
 
 extern NSPV_inforesp NSPV_inforesult;
 
+/// Return largest ever chain height (CURRENT_HEIGHT from the komodo_state)
 int32_t komodo_currentheight()
 {
     char symbol[KOMODO_ASSETCHAIN_MAXLEN],dest[KOMODO_ASSETCHAIN_MAXLEN]; struct komodo_state *sp;
@@ -347,6 +350,32 @@ int32_t komodo_validate_chain(uint256 srchash,int32_t notarized_height)
     } else return(1);
 }
 
+/****
+ * @brief Validates vouts in the notarisation transaction:
+ * checks if this is a p2pk vout sending to an acting notary,
+ * or, if this vout is an opreturn then validates notarisation data in it.
+ * Also, updates the last nota in memory and adds the nota into komodoevents file (if requested by fJustCheck == false)
+ * @param fJustCheck only check, do not update nota in the komodoevents file. Note: for KMD is called with false.
+ * @param[out] isratificationp set to 1 if LTC txid is not null. It must be initialised to zero by the caller. Denotes that a new notary is ratified
+ * @param notaryid notary id in the vout
+ * @param scriptbuf vout script
+ * @param scriptlen vout script length
+ * @param height this block height
+ * @param txhash hash of transaction with this vout
+ * @param i this tx index in the block. Will be used to fill tx index in the MoM data
+ * @param j this vout index. Used to set *voutmaskp
+ * @param[out] voutmaskp komodo_voutupdate sets j bit in *voutmaskp if notary id matches to destination pubkey in this vout
+ * @param[out] specialtxp komodo_voutupdate sets this to 1 if vout destination is crypto777. Caller must set *specialtxp to zero
+ * @param[out] notarizedheightp set to last notarised height if vout is a valid nota
+ * @param value vout value
+ * @param notarized legacy value, must be set to 0 by the caller
+ * @param signedmask bits denoting how many notaries signed this txansaction vins
+ * @param timestamp for which notary status is checked (used if this is an asset chain)
+ * @returns
+ * if vout is pay-to-pubkey returns 'notaryid'. 
+ * if fJustCheck is true: if vout is opreturn and nota in it is valid returns -2 or -1 if else
+ * if fJustCheck is false: returns notaryid if nota in opreturn is valid or -1
+ */
 int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notaryid,uint8_t *scriptbuf,
         int32_t scriptlen,int32_t height,uint256 txhash,int32_t i,int32_t j,uint64_t *voutmaskp,
         int32_t *specialtxp,int32_t *notarizedheightp,uint64_t value,int32_t notarized,
@@ -356,13 +385,14 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
     int32_t opretlen,nid,offset,k,MoMdepth,matched,len = 0; uint256 MoM,srchash,desttxid; uint8_t crypto777[33]; struct komodo_state *sp; char symbol[KOMODO_ASSETCHAIN_MAXLEN],dest[KOMODO_ASSETCHAIN_MAXLEN];
     if ( (sp= komodo_stateptr(symbol,dest)) == 0 )
         return(-1);
-    if ( scriptlen == 35 && scriptbuf[0] == 33 && scriptbuf[34] == 0xac )
+    if ( scriptlen == 35 && scriptbuf[0] == 33 && scriptbuf[34] == 0xac ) // if this is a pay-to-pubkey vout
     {
         if ( i == 0 && j == 0 && memcmp(NOTARY_PUBKEY33,scriptbuf+1,33) == 0 && IS_KOMODO_NOTARY )
         {
             LogPrintf("%s KOMODO_LASTMINED.%d -> %d\n",chainName.symbol().c_str(),KOMODO_LASTMINED,height);
+            // if this block is mined by me then update the KOMODO_LASTMINED and prevKOMODO_LASTMINED heights:
             prevKOMODO_LASTMINED = KOMODO_LASTMINED;
-            KOMODO_LASTMINED = height;
+            KOMODO_LASTMINED = height;  // if I am a notary store my last mined height
         }
         decode_hex(crypto777,33,CRYPTO777_PUBSECPSTR);
         /*for (k=0; k<33; k++)
@@ -375,7 +405,7 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
             *specialtxp = 1;
             //LogPrintf(">>>>>>>> ");
         }
-        else if ( komodo_chosennotary(&nid,height,scriptbuf + 1,timestamp) >= 0 )
+        else if ( komodo_chosennotary(&nid,height,scriptbuf + 1,timestamp) >= 0 ) // get acting notaries for this height or timestamp
         {
             //LogPrintf("found notary.k%d\n",k);
             if ( notaryid < 64 )
@@ -394,8 +424,10 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
             }
         }
     }
-    if ( scriptbuf[len++] == 0x6a )
+    if ( scriptbuf[len++] == 0x6a ) // if this is an opreturn vout
     {
+        // parse notarisation data:
+
         struct komodo_ccdata ccdata; struct komodo_ccdataMoMoM MoMoMdata;
         int32_t validated = 0,nameoffset,opoffset = 0;
         if ( (opretlen= scriptbuf[len++]) == 0x4c )
@@ -410,37 +442,37 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
         if ( chainName.isKMD() )
         {
             if ( strcmp("KMD",(char *)&scriptbuf[len+32 * 2 + 4]) == 0 )
-                matched = 1;
+                matched = 1;   // it is a back nota is for this chain (KMD)
         }
         else
         {
-            if ( scriptbuf[len] == 'K' )
+            if ( scriptbuf[len] == 'K' ) // this key-value feature is deprecated and should not be used
             {
                 //LogPrintf("i.%d j.%d KV OPRET len.%d %.8f\n",i,j,opretlen,dstr(value));
                 komodo_stateupdate(height,0,0,0,txhash,0,0,0,0,value,&scriptbuf[len],opretlen,j,zero,0);
                 return(-1);
             }
             if ( strcmp(chainName.symbol().c_str(),(char *)&scriptbuf[len+32*2+4]) == 0 )
-                matched = 1;
+                matched = 1;  // it is a back nota is for this chain (asset chain)
         }
         offset = 32 * (1 + matched) + 4;
         nameoffset = (int32_t)strlen((char *)&scriptbuf[len+offset]);
         nameoffset++;
         memset(&ccdata,0,sizeof(ccdata));
-        strncpy(ccdata.symbol,(char *)&scriptbuf[len+offset],sizeof(ccdata.symbol));
+        strncpy(ccdata.symbol,(char *)&scriptbuf[len+offset],sizeof(ccdata.symbol)); // read notarised chain name
         if ( j == 1 && opretlen >= len+offset-opoffset )
         {
             memset(&MoMoMdata,0,sizeof(MoMoMdata));
             if ( matched == 0 && signedmask != 0 && bitweight(signedmask) >= KOMODO_MINRATIFY )
-                notarized = 1;
+                notarized = 1;  // we have enough notaries signed this tx
             if ( strcmp("PIZZA",ccdata.symbol) == 0 || strncmp("TXSCL",ccdata.symbol,5) == 0 || strcmp("BEER",ccdata.symbol) == 0)
                 notarized = 1;
-            len += iguana_rwbignum(0,&scriptbuf[len],32,(uint8_t *)&srchash);
-            len += iguana_rwnum(0,&scriptbuf[len],sizeof(*notarizedheightp),(uint8_t *)notarizedheightp);
+            len += iguana_rwbignum(0,&scriptbuf[len],32,(uint8_t *)&srchash);   // read notarsed block hash
+            len += iguana_rwnum(0,&scriptbuf[len],sizeof(*notarizedheightp),(uint8_t *)notarizedheightp); // read noatrised height
             if ( matched != 0 )
-                len += iguana_rwbignum(0,&scriptbuf[len],32,(uint8_t *)&desttxid);
+                len += iguana_rwbignum(0,&scriptbuf[len],32,(uint8_t *)&desttxid); // for back nota read LTC txid
             if ( matched != 0 )
-                validated = komodo_validate_chain(srchash,*notarizedheightp);
+                validated = komodo_validate_chain(srchash,*notarizedheightp); // I believe this should always return 1
             else validated = 1;
             // Any notarization that is matched and has a decodable op_return is enough to pay notaries. Otherwise bugs! 
             if ( fJustCheck && matched != 0 )
@@ -457,25 +489,29 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
                 ccdata.MoMdata.height = height;
                 ccdata.MoMdata.txi = i;
                 //LogPrintf("nameoffset.%d len.%d + 36 %d opoffset.%d vs opretlen.%d\n",nameoffset,len,len+36,opoffset,opretlen);
-                if ( len+36-opoffset <= opretlen )
+                if ( len+36-opoffset <= opretlen ) 
                 {
-                    len += iguana_rwbignum(0,&scriptbuf[len],32,(uint8_t *)&MoM);
-                    len += iguana_rwnum(0,&scriptbuf[len],sizeof(MoMdepth),(uint8_t *)&MoMdepth);
+                    len += iguana_rwbignum(0,&scriptbuf[len],32,(uint8_t *)&MoM);  // read MoM merkle root
+                    len += iguana_rwnum(0,&scriptbuf[len],sizeof(MoMdepth),(uint8_t *)&MoMdepth);   // read MoM depth (number of blocks included in the MoM)
                     ccdata.MoMdata.MoM = MoM;
-                    ccdata.MoMdata.MoMdepth = MoMdepth & 0xffff;
-                    if ( len+sizeof(ccdata.CCid)-opoffset <= opretlen )
+                    ccdata.MoMdata.MoMdepth = MoMdepth & 0xffff;  // MoMdepth could include legacy CCid in upper bytes
+                    if ( len+sizeof(ccdata.CCid)-opoffset <= opretlen ) 
                     {
-                        len += iguana_rwnum(0,&scriptbuf[len],sizeof(ccdata.CCid),(uint8_t *)&ccdata.CCid);
+                        // we have more data -> this should be asset chain back notarisation:
+                        len += iguana_rwnum(0,&scriptbuf[len],sizeof(ccdata.CCid),(uint8_t *)&ccdata.CCid); // read notarised asset chain CC id
                         ccdata.len = sizeof(ccdata.CCid);
-                        if ( !chainName.isKMD() )
+                        if ( !chainName.isKMD() ) 
                         {
+                            // if this is an asset chain:
                             // MoMoM, depth, numpairs, (notarization ht, MoMoM offset)
                             if ( len+48-opoffset <= opretlen && chainName.isSymbol(ccdata.symbol) )
                             {
+                                // I think this code never runs, it is probably legacy.
+                                // See another impl for nota NotarisationData class: it does not have all these values
                                 len += iguana_rwnum(0,&scriptbuf[len],sizeof(uint32_t),(uint8_t *)&MoMoMdata.kmdstarti);
                                 len += iguana_rwnum(0,&scriptbuf[len],sizeof(uint32_t),(uint8_t *)&MoMoMdata.kmdendi);
-                                len += iguana_rwbignum(0,&scriptbuf[len],sizeof(MoMoMdata.MoMoM),(uint8_t *)&MoMoMdata.MoMoM);
-                                len += iguana_rwnum(0,&scriptbuf[len],sizeof(uint32_t),(uint8_t *)&MoMoMdata.MoMoMdepth);
+                                len += iguana_rwbignum(0,&scriptbuf[len],sizeof(MoMoMdata.MoMoM),(uint8_t *)&MoMoMdata.MoMoM); // read MoMoM merkle root
+                                len += iguana_rwnum(0,&scriptbuf[len],sizeof(uint32_t),(uint8_t *)&MoMoMdata.MoMoMdepth); // read MoMoM depth of included blocks
                                 len += iguana_rwnum(0,&scriptbuf[len],sizeof(uint32_t),(uint8_t *)&MoMoMdata.numpairs);
                                 MoMoMdata.len += sizeof(MoMoMdata.MoMoM) + sizeof(uint32_t)*4;
                                 if ( len+MoMoMdata.numpairs*8-opoffset == opretlen )
@@ -509,6 +545,7 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
                 
                 if ( matched != 0 && *notarizedheightp > sp->LastNotarizedHeight() && *notarizedheightp < height )
                 {
+                    // update last nota in memory
                     sp->SetLastNotarizedHeight(*notarizedheightp);
                     sp->SetLastNotarizedHash(srchash);
                     sp->SetLastNotarizedDestTxId(desttxid);
@@ -517,6 +554,7 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
                         sp->SetLastNotarizedMoM(MoM);
                         sp->SetLastNotarizedMoMDepth(MoMdepth);
                     }
+                    // update komodoevents file and memory events with last nota data:
                     komodo_stateupdate(height,0,0,0,zero,0,0,0,0,0,0,0,0,sp->LastNotarizedMoM(),sp->LastNotarizedMoMDepth());
                     LogPrintf("[%s] ht.%d NOTARIZED.%d %s.%s %sTXID.%s lens.(%d %d) MoM.%s %d\n",
                             chainName.symbol().c_str(),height,sp->LastNotarizedHeight(),
@@ -526,6 +564,7 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
                     
                     if ( chainName.isKMD() )
                     {
+                        // update signedmask file. TODO: looks like legacy and may be deprecated
                         if ( signedfp == 0 )
                         {
                             char fname[MAX_STATEFNAME+1];
@@ -540,7 +579,7 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
                             fwrite(&signedmask,1,sizeof(signedmask),signedfp);
                             fflush(signedfp);
                         }
-                        if ( opretlen > len && scriptbuf[len] == 'A' )
+                        if ( opretlen > len && scriptbuf[len] == 'A' ) // 'A' not used and not saved
                         {
                             //for (i=0; i<opretlen-len; i++)
                             //    LogPrintf("%02x",scriptbuf[len+i]);
@@ -563,6 +602,7 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
         {
             if ( opretlen >= 32*2+4 && strcmp(chainName.ToString().c_str(),(char *)&scriptbuf[len+32*2+4]) == 0 )
             {
+                // Checks if LTC txid non empty:
                 for (k=0; k<32; k++)
                     if ( scriptbuf[len+k] != 0 )
                         break;
@@ -573,6 +613,7 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
                 }
             }
 
+            // Note: 'X' and 'A' not used and not saved
             if ( *isratificationp == 0 && (signedmask != 0 || (scriptbuf[len] != 'X' && scriptbuf[len] != 'A')) ) // && scriptbuf[len] != 'I')
                 komodo_stateupdate(height,0,0,0,txhash,0,0,0,0,value,&scriptbuf[len],opretlen,j,zero,0);
         }
@@ -586,6 +627,8 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
 // if txi == 0 && 2 outputs and 2nd OP_RETURN, len == 32*2+4 -> notarized, 1st byte 'P' -> pricefeed
 // OP_RETURN: 'D' -> deposit, 'W' -> withdraw
 
+// loads a transaction for txid and copy its vout[n] script to scriptPubKey
+// returns -1 if txid or n invalid or number of copied bytes
 int32_t gettxout_scriptPubKey(uint8_t *scriptPubKey,int32_t maxsize,uint256 txid,int32_t n)
 {
     int32_t i,m; uint8_t *ptr;
@@ -605,6 +648,7 @@ int32_t gettxout_scriptPubKey(uint8_t *scriptPubKey,int32_t maxsize,uint256 txid
     return(-1);
 }
 
+// return notaryid if scriptPubKey is a pay-to-pubkey script and has a notary pubkey (checked against pubkeys that must be initialised by the caller)
 int32_t komodo_notarycmp(uint8_t *scriptPubKey,int32_t scriptlen,uint8_t pubkeys[64][33],int32_t numnotaries,uint8_t rmd160[20])
 {
     int32_t i;
@@ -631,6 +675,7 @@ static int32_t hwmheight;
 
 void adjust_hwmheight(int32_t newHeight) { hwmheight = newHeight; }
 
+// add komodo dpow related checks and state updates when a block is connected
 int32_t komodo_connectblock(bool fJustCheck, CBlockIndex *pindex,CBlock& block)
 {
     int32_t staked_era; static int32_t lastStakedEra;
@@ -664,7 +709,7 @@ int32_t komodo_connectblock(bool fJustCheck, CBlockIndex *pindex,CBlock& block)
             lastStakedEra = staked_era;
         }
     }
-    numnotaries = komodo_notaries(pubkeys,pindex->nHeight,pindex->GetBlockTime());
+    numnotaries = komodo_notaries(pubkeys,pindex->nHeight,pindex->GetBlockTime()); // get acting notary pubkeys for this block height or timestamp
     calc_rmd160_sha256(rmd160,pubkeys[0],33);
     if ( pindex->nHeight > hwmheight )
         hwmheight = pindex->nHeight;
@@ -703,13 +748,14 @@ int32_t komodo_connectblock(bool fJustCheck, CBlockIndex *pindex,CBlock& block)
             voutmask = specialtx = notarizedheight = isratification = notarized = 0;
             signedmask = (height < 91400) ? 1 : 0;
             numvins = block.vtx[i].vin.size();
+            // set a bit for each notary signed this tx in signedmask
             for (j=0; j<numvins; j++)
             {
                 if ( i == 0 && j == 0 )
                     continue;
                 if ( (scriptlen= gettxout_scriptPubKey(scriptPubKey,sizeof(scriptPubKey),block.vtx[i].vin[j].prevout.hash,block.vtx[i].vin[j].prevout.n)) > 0 )
                 {
-                    if ( (k= komodo_notarycmp(scriptPubKey,scriptlen,pubkeys,numnotaries,rmd160)) >= 0 )
+                    if ( (k= komodo_notarycmp(scriptPubKey,scriptlen,pubkeys,numnotaries,rmd160)) >= 0 ) // if scriptPubKey has a valid notary pubkey
                         signedmask |= (1LL << k);
                     else if ( 0 && numvins >= 17 )
                     {
@@ -727,6 +773,7 @@ int32_t komodo_connectblock(bool fJustCheck, CBlockIndex *pindex,CBlock& block)
             {
                 if ( !fJustCheck && !chainName.isKMD() )
                 {
+                    // update signedmask file. TODO: looks like legacy and may be deprecated
                     static FILE *signedfp;
                     if ( signedfp == 0 )
                     {
@@ -745,7 +792,7 @@ int32_t komodo_connectblock(bool fJustCheck, CBlockIndex *pindex,CBlock& block)
                     transaction = i;
                     LogPrintf("[%s] ht.%d txi.%d signedmask.%llx numvins.%d numvouts.%d <<<<<<<<<<<  notarized\n",chainName.symbol().c_str(),height,i,(long long)signedmask,numvins,numvouts);
                 }
-                notarized = 1;
+                notarized = 1; // num of signed notaries > KOMODO_MINRATIFY: it can be a notarisation tx
             }
             // simulate DPoW in regtest mode for dpowconfs tests/etc
             if ( Params().NetworkIDString() == "regtest" && ( height%7 == 0) ) {
@@ -761,6 +808,7 @@ int32_t komodo_connectblock(bool fJustCheck, CBlockIndex *pindex,CBlock& block)
                 if ( len >= sizeof(uint32_t) && len <= sizeof(scriptbuf) )
                 {
                     memcpy(scriptbuf,(uint8_t *)&block.vtx[i].vout[j].scriptPubKey[0],len);
+                    // validate output if it has a notary destination or output is an opreturn with a notarisation data (nota):
                     notaryid = komodo_voutupdate(fJustCheck,&isratification,notaryid,scriptbuf,len,height,txhash,i,j,&voutmask,&specialtx,&notarizedheight,(uint64_t)block.vtx[i].vout[j].nValue,notarized,signedmask,(uint32_t)chainActive.Tip()->GetBlockTime());
                     if ( fJustCheck && notaryid == -2 )
                     {

@@ -786,6 +786,7 @@ int32_t komodo_block2height(CBlock *block)
     return(height);
 }
 
+// get miner's pubkey from coinbase
 bool komodo_block2pubkey33(uint8_t *pubkey33,CBlock *block)
 {
     int32_t n;
@@ -868,6 +869,16 @@ void komodo_index2pubkey33(uint8_t *pubkey33,CBlockIndex *pindex,int32_t height)
     }
 }
 
+/***
+ * @brief Get miner ids (notary ids who mined) and their pubkeys for the recent 65 blocks. Also return pubkeys and blocktimes for the recent blocks.
+ * Note that mids[0], pubkeys[0], blocktimes[0] actually are not set as those elements correspond to the new, not mined yet, block
+ * @param[out] pubkeys notary pubkeys who mined last blocks
+ * @param[out] mids notary miner ids as their indexes in the season notary list 
+ * @param[out] blocktimes of the recent blocks
+ * @param[out] nonzpkeysp count of notary mined block in the recently mined blocks
+ * @param[in] height of the new block to be created
+ * @returns 1 if non zero notary blocks were found, 0 if not
+ */
 int32_t komodo_eligiblenotary(uint8_t pubkeys[66][33],int32_t *mids,uint32_t blocktimes[66],int32_t *nonzpkeysp,int32_t height)
 {
     // after the season HF block ALL new notaries instantly become elegible. 
@@ -876,24 +887,27 @@ int32_t komodo_eligiblenotary(uint8_t pubkeys[66][33],int32_t *mids,uint32_t blo
     n = komodo_notaries(notarypubs33,height,0);
     for (i=duplicate=0; i<66; i++)
     {
-        if ( (pindex= komodo_chainactive(height-i)) != 0 )
+        if ( (pindex= komodo_chainactive(height-i)) != 0 )  // Note that for i = 0 the actual chain tip is height-1 
+                                                            // so pindex is null and mids[0] is always equal to initial -1
+                                                            // that is, 'duplicate' won't be found ever (see below) 
         {
             blocktimes[i] = pindex->nTime;
             if ( komodo_blockload(block,pindex) == 0 )
             {
-                komodo_block2pubkey33(pubkeys[i],&block);
-                for (j=0; j<n; j++)
+                komodo_block2pubkey33(pubkeys[i],&block);   // get miner's pubkey
+                for (j=0; j<n; j++) // check if the miner is a notary
                 {
                     if ( memcmp(notarypubs33[j],pubkeys[i],33) == 0 )
                     {
-                        mids[i] = j;
+                        mids[i] = j;  // mids[i] is an index in current season notarypubs33[] (notary id)
                         (*nonzpkeysp)++;
                         break;
                     }
                 }
             } else LogPrintf("couldnt load block.%d\n",height);
             if ( mids[0] >= 0 && i > 0 && mids[i] == mids[0] )
-                duplicate++;
+                duplicate++;    // this never works and duplicate is never found (mids[0] == -1 always)
+                                // however this is not an issue as duplicates will be checked again in another function
         }
     }
     if ( i == 66 && duplicate == 0 && (height > 186233 || *nonzpkeysp > 0) )
@@ -930,6 +944,18 @@ int32_t komodo_minerids(uint8_t *minerids,int32_t height,int32_t width)
     return(nonz);
 }
 
+/****
+ * @brief Returns if a block mined by the pubkey33 for this height is special (allowed for notary easy mining). 
+ * Checks if pubkey33 is a valid notary and it has not already mined any of recent 65 blocks, 
+ * also checks if blocktime is valid correct in respect to the last blocktime
+ * @param pubkeys seems unused
+ * @param mids for notary ids which easy-mined recent blocks
+ * @param blocktimes block times from the recent blocks 
+ * @param height of the checked block
+ * @param pubkey33 notary pubkey mined the checked block
+ * @param blocktime of the checked block
+ * @returns 1 if block is special, 0 if it is a normally mined block, < 0 if it is an invalid special block
+ */
 int32_t komodo_is_special(uint8_t pubkeys[66][33],int32_t mids[66],uint32_t blocktimes[66],int32_t height,uint8_t pubkey33[33],uint32_t blocktime)
 {
     int32_t i,j,notaryid=0,minerid,limit,nid; uint8_t destpubkey33[33];
@@ -1038,7 +1064,7 @@ uint32_t komodo_blocktime(uint256 hash)
  * @param[out] notarized_heightp the notarized height found
  * @param[in] nHeight the height that should be greater than the notarized height
  * @param[in] hash the hash that should match the notarized hash
- * @returns true on success
+ * @returns true on success, false if a fork detected below the latest notarised height
  */
 bool komodo_checkpoint(int32_t *notarized_heightp, int32_t nHeight, uint256 hash)
 {
@@ -1046,9 +1072,10 @@ bool komodo_checkpoint(int32_t *notarized_heightp, int32_t nHeight, uint256 hash
     if ( (pindex= chainActive.Tip()) == 0 )
         return false;
 
-    // get the most recent (highest) notarized_checkpointdata
     uint256 notarized_hash;
     uint256 notarized_desttxid;
+    // get the most recent (highest) notarized_checkpointdata in respect to the chain tip (pindex)
+    // (actually it should return the last nota)
     int32_t notarized_height = komodo_notarizeddata(pindex->nHeight,&notarized_hash,&notarized_desttxid);
     *notarized_heightp = notarized_height;
 
@@ -1057,12 +1084,14 @@ bool komodo_checkpoint(int32_t *notarized_heightp, int32_t nHeight, uint256 hash
     if ( notarized_height >= 0 && notarized_height <= pindex->nHeight 
             && (it = mapBlockIndex.find(notarized_hash)) != mapBlockIndex.end() && (notary = it->second) != nullptr )
     {
-        //verify that the block info returned from komodo_notarizeddata matches the actual block
+        // verify that the block info returned from komodo_notarizeddata matches the actual block
         if ( notary->nHeight == notarized_height ) // if notarized_hash not in chain, reorg
         {
-            if ( nHeight < notarized_height )
+            if ( nHeight < notarized_height )   // the validated block's height is below the notarized_height - such a fork is not allowed
                 return false;
-            else if ( nHeight == notarized_height && memcmp(&hash,&notarized_hash,sizeof(hash)) != 0 )
+            else if ( nHeight == notarized_height && memcmp(&hash,&notarized_hash,sizeof(hash)) != 0 )  // check if the new block is added at the last notarised height 
+                                                                                                        // then its hash must be also the last notarised block hash 
+                                                                                                        // (not sure how this is possible though but anyway) 
             {
                 // the height matches, but the hash they passed us does not match the notarized_hash we found
                 LogPrintf("[%s] nHeight.%d == NOTARIZED_HEIGHT.%d, diff hash\n", 
@@ -1074,6 +1103,7 @@ bool komodo_checkpoint(int32_t *notarized_heightp, int32_t nHeight, uint256 hash
     return true;
 }
 
+// get next height as chain tip + 1
 int32_t komodo_nextheight()
 {
     //AssertLockHeld(cs_main);
@@ -1081,12 +1111,12 @@ int32_t komodo_nextheight()
     CBlockIndex *pindex; int32_t ht;
     if ( (pindex= chainActive.Tip()) != 0 && (ht= pindex->nHeight) > 0 )
         return(ht+1);
-    else return(komodo_longestchain() + 1);
+    else return(komodo_longestchain() + 1); // apparently should work as may have unexpected side effects, as komodo_longestchain() gets largest height from connected peers
 }
 
 /**
- * @brief get the KMD chain height
- * 
+ * @brief get the KMD chain height largest ever (CURRENT_HEIGHT from komodo_state). 
+ * Should not be used and should be deprecated
  * @param kmdheightp the chain height of KMD
  * @return 1 if this chain's height >= komodo_longestchain(), otherwise 0
  */
@@ -1106,7 +1136,8 @@ int32_t komodo_isrealtime(int32_t *kmdheightp)
 }
 
 /*******
- * @brief validate interest in processing a transaction
+ * @brief validate transaction lock time so it is not too old (no more than approx 1 hour earlier than last block time). 
+ * This is important for komodo interest calculation
  * @param tx the transaction
  * @param txheight the desired chain height to evaluate
  * @param cmptime the block time (often the median block time of a chunk of recent blocks)
@@ -1588,6 +1619,7 @@ int32_t komodo_getnotarizedheight(uint32_t timestamp,int32_t height, uint8_t *sc
     return(notarizedheight);
 }
 
+// adds vouts with notary pays to a mutable transaction. Used for assets chains with -ac_notarypay param
 uint64_t komodo_notarypay(CMutableTransaction &txNew, std::vector<int8_t> &NotarisationNotaries, uint32_t timestamp, int32_t height, uint8_t *script, int32_t len)
 {
     // fetch notary pubkey array.
@@ -1633,6 +1665,14 @@ uint64_t komodo_notarypay(CMutableTransaction &txNew, std::vector<int8_t> &Notar
     return(total);
 }
 
+/**
+ * For a vin array checks if their spent vouts are pay-to-pubkey and the pubkey is a notary
+ * @param notarypubkeys initialised currently acting notary pubkeys
+ * @param numNN number of notaries in notarypubkeys
+ * @param vin vector of vins to check
+ * @param[out] NotarisationNotaries reurned notary pubkeys from vins
+ * @return Returns false if could not load any previous transaction
+ */
 bool GetNotarisationNotaries(uint8_t notarypubkeys[64][33], int8_t &numNN, const std::vector<CTxIn> &vin, std::vector<int8_t> &NotarisationNotaries)
 {
     uint8_t *script; int32_t scriptlen;
@@ -1655,6 +1695,7 @@ bool GetNotarisationNotaries(uint8_t notarypubkeys[64][33], int8_t &numNN, const
     return true;
 }
 
+// checks notary payment is valid. Used for assets chains with -ac_notarypay parameter
 uint64_t komodo_checknotarypay(CBlock *pblock,int32_t height)
 {
     std::vector<int8_t> NotarisationNotaries; uint8_t *script; int32_t scriptlen;

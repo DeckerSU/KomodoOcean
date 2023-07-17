@@ -116,7 +116,7 @@ void komodo_eventadd_opreturn( komodo_state *sp, const char *symbol, int32_t hei
 
 /*****
  * @brief Undo an event
- * @note seems to only work for KMD height events
+ * @note Does nothing. Seems to only work for KMD height events
  * @param sp the state object
  * @param ev the event to undo
  */
@@ -125,6 +125,7 @@ void komodo_event_undo(komodo_state *sp, T& ev)
 {
 }
 
+/// undo kmdheight event and restore SAVEDHEIGHT in the komodo_state
 template<>
 void komodo_event_undo(komodo_state* sp, komodo::event_kmdheight& ev)
 {
@@ -133,7 +134,12 @@ void komodo_event_undo(komodo_state* sp, komodo::event_kmdheight& ev)
 }
  
 
-
+/// @brief rewind events till the 'height' parameter. 
+/// For a rolled back event calls komodo_event_undo() which for the event_kmdheight event type resets SAVEDHEIGHT in komodo_state. 
+/// Apparently SAVEDHEIGHT is never used yet
+/// @param sp 
+/// @param symbol - chain name, unused
+/// @param height to which events should be rewind
 void komodo_event_rewind(komodo_state *sp, const char *symbol, int32_t height)
 {
     if ( sp != nullptr )
@@ -155,6 +161,12 @@ void komodo_event_rewind(komodo_state *sp, const char *symbol, int32_t height)
     }
 }
 
+/// @brief Set current height as the chain's largest height ever (CURRENT_HEIGHT in komodo_state object). 
+/// Also set the current timestamp in komodo_state object
+/// Also @see komodo_currentheight_set() as yet another way to set CURRENT_HEIGHT
+/// @param sp pointer to komodo_state
+/// @param kmdheight height to set in komodo_state
+/// @param timestamp to set in komodo_state
 void komodo_setkmdheight(struct komodo_state *sp,int32_t kmdheight,uint32_t timestamp)
 {
     if ( sp != nullptr )

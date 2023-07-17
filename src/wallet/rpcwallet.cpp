@@ -5414,8 +5414,10 @@ UniValue z_listoperationids(const UniValue& params, bool fHelp, const CPubKey& m
 #include "script/sign.h"
 
 /**
- * @brief Search for 10k sat. P2PK notary utxos and make proof tx (txNew) from it for further include in block.
+ * @brief Creates a transaction with a notary proof vin and notary deposit. 
+ * Search for 10k sat. P2PK notary utxos and make proof tx (txNew) from it for further include in block.
  * opretIn should be empty script before december hardfork, and contains prepared opret script after.
+ * @see komodo_check_deposit() where this is verified.
  *
  * @param txNew - out: signed notary proof tx
  * @param notarypub33 - notary node compressed pubkey to search 10k sat. P2PK utxos in the wallet (wallet should be unlocked)

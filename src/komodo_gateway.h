@@ -43,7 +43,13 @@ int32_t komodo_bannedset(int32_t *indallvoutsp,uint256 *array,int32_t max);
 void komodo_update_interest();
 
 /***
- * @brief  verify block is valid pax pricing
+ * @brief verify block:
+ * if any block tx spends one from the 'banned' set - do not allow to spend banned vouts.
+ * For KMD network: if last tx in the block has valid notary deposit value and has a vin that matches to the coinbase scriptpubkey 
+ * then the block is considered valid (potentially valid for easy mining).
+ * If above is not true and coinbase is sent to a notary then the block is invalid (not proved to created by a notary and not valid for easy mining).
+ * 
+ * For asset chains with commission or founders reward check the commission
  * @param height the height of the block
  * @param block the block to check
  * @returns <0 on error, 0 on success

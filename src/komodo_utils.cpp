@@ -1725,7 +1725,7 @@ komodo_state *komodo_stateptrget(char *base)
 }
 
 /****
- * @brief get the symbol and dest based on this chain's ASSETCHAINS_SYMBOL
+ * @brief get komodo_state object for the symbol, Also sets the symbol and dest based on this chain's name (ASSETCHAINS_SYMBOL or KMD)
  * @param[out] symbol this chain ("KMD" if ASSETCHAINS_SYMBOL is nullptr)
  * @param[out] dest the destination chain ("BTC" in the case of KMD, otherwise "KMD")
  * @returns the komodo_state object for symbol

@@ -740,7 +740,7 @@ bool CheckProofOfWork(const CBlockHeader &blkHeader, uint8_t *pubkey33, int32_t 
 
             if ( (flag != 0 || special2 > 0) && special2 != -2 )
             {
-                bnTarget.SetCompact(KOMODO_MINDIFF_NBITS,&fNegative,&fOverflow);
+                bnTarget.SetCompact(KOMODO_MINDIFF_NBITS,&fNegative,&fOverflow); // allow notary easy mining for special case
             }
         }
     }

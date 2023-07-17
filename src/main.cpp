@@ -5366,11 +5366,14 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
         }
         if ( nHeight != 0 )
         {
+            // Check that the connecting block is not below the last check point
             if ( pcheckpoint != 0 && nHeight < pcheckpoint->nHeight )
                 return state.DoS(1, error("%s: forked chain older than last checkpoint (height %d) vs %d", __func__, nHeight,pcheckpoint->nHeight));
+
+            
             if ( !komodo_checkpoint(&notarized_height,nHeight,hash) )
             {
-                CBlockIndex *heightblock = chainActive[nHeight];
+                CBlockIndex *heightblock = chainActive[nHeight];    // Evidently this always would return null as the block at nHeight is not in the chain yet
                 if ( heightblock != 0 && heightblock->GetBlockHash() == hash )
                     return true;
                 else 

@@ -833,7 +833,7 @@ CBlockTemplate* CreateNewBlock(const CPubKey _pk,const CScript& _scriptPubKeyIn,
             else
                 opret.clear();
 
-            if (komodo_notaryvin(txNotary, NOTARY_PUBKEY33, opret, pblock->nTime) > 0)
+            if (komodo_notaryvin(txNotary, NOTARY_PUBKEY33, opret, pblock->nTime) > 0) // add a tx with a notary vin proving this notary created the block
             {
                 CAmount txfees = 5000;
                 pblock->vtx.push_back(txNotary);
@@ -1323,6 +1323,8 @@ void static BitcoinMiner()
                     int32_t dispflag = 1; // TODO: set this back to 0 when finished testing.
                     if ( notaryid <= 3 || notaryid == 32 || (notaryid >= 43 && notaryid <= 45) || notaryid == 51 || notaryid == 52 || notaryid == 56 || notaryid == 57 )
                         dispflag = 1;
+                    // get miners ids (mids) which are notary ids who mined a block within the last 65 blocks
+                    // also get pubkeys for last 65 blocks. (Note that mids[0] is set to -1 and pubkey[0] is not set) 
                     komodo_eligiblenotary(pubkeys,mids,blocktimes,&nonzpkeys,Mining_height);
                     if ( nonzpkeys > 0 )
                     {
@@ -1334,11 +1336,13 @@ void static BitcoinMiner()
                         else externalflag = 0;
                         if ( IS_KOMODO_NOTARY )
                         {
+                            // check for the second block created by the latest miner in last -1..-66 blocks
+                            // (actually this does not work as pubkeys[0] is not set properly in komodo_eligiblenotary)
                             for (i=1; i<66; i++)
-                                if ( memcmp(pubkeys[i],pubkeys[0],33) == 0 )
+                                if ( memcmp(pubkeys[i],pubkeys[0],33) == 0 )  
                                     break;
                             if ( externalflag == 0 && i != 66 && mids[i] >= 0 )
-                                LogPrintf("VIOLATION at %d, notaryid.%d\n",i,mids[i]);
+                                LogPrintf("VIOLATION at %d, notaryid.%d\n",i,mids[i]);  // only print a warning if the second block by the latest miner, created as a notary, is found
                             for (j=gpucount=0; j<65; j++)
                             {
                                 if ( dispflag != 0 )
@@ -1357,16 +1361,18 @@ void static BitcoinMiner()
                             if ( dispflag != 0 )
                                 LogPrintf(" <- prev minerids from ht.%d notary.%d gpucount.%d %.2f%% t.%u\n",pindexPrev->nHeight,notaryid,gpucount,100.*(double)gpucount/j,(uint32_t)time(NULL));
                         }
+                        // find if this notary node mined a block within last 65 blocks
                         for (j=0; j<65; j++)
                             if ( mids[j] == notaryid )
                                 break;
                         if ( j == 65 )
-                            KOMODO_LASTMINED = 0;
+                            KOMODO_LASTMINED = 0;   // clear KOMODO_LASTMINED if this notary node has not mined for 65 blocks
                     } else LogPrintf("ht.%i all NN are elegible\n",Mining_height); //else LogPrintf("no nonz pubkeys\n"); 
                     
+                    // this node can easy mine only after 64 blocks since he mined a block last time: Mining_height > KOMODO_LASTMINED+64
                     if ( (Mining_height >= 235300 && Mining_height < 236000) || (j == 65 && Mining_height > KOMODO_MAYBEMINED+1 && Mining_height > KOMODO_LASTMINED+64) )
                     {
-                        HASHTarget = arith_uint256().SetCompact(KOMODO_MINDIFF_NBITS);
+                        HASHTarget = arith_uint256().SetCompact(KOMODO_MINDIFF_NBITS); // Set min target for easy mining this block
                         LogPrintf("I am the chosen one for %s ht.%d\n",chainName.symbol().c_str(),pindexPrev->nHeight+1);
                     } else LogPrintf("duplicate at j.%d\n",j);
 

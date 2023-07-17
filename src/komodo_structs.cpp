@@ -346,13 +346,14 @@ std::ostream& operator<<(std::ostream& os, const event_pricefeed& in)
 } // namespace komodo
 
 /*****
- * @brief add a checkpoint to the collection and update member values
+ * @brief add a notarization checkpoint to the collection and update member values
+ * Also update the last nota
  * @param in the new values
  */
 void komodo_state::AddCheckpoint(const notarized_checkpoint &in)
 {
     NPOINTS.push_back(in);
-    last = in;
+    last = in; // update the last notarisation in memory, available with sp->LastNotarizedHeight()
 }
 
 /****
@@ -369,7 +370,7 @@ int32_t komodo_state::NotarizedData(int32_t nHeight,uint256 *notarized_hashp,uin
     if ( NPOINTS.size() > 0 )
     {
         const notarized_checkpoint* np = nullptr;
-        if ( NPOINTS_last_index < NPOINTS.size() && NPOINTS_last_index > 0 ) // if we cached an NPOINT index
+        if ( NPOINTS_last_index < NPOINTS.size() && NPOINTS_last_index > 0 ) // if we cached an NPOINT index. 
         {
             np = &NPOINTS[NPOINTS_last_index-1]; // grab the previous
             if ( np->nHeight < nHeight ) // if that previous is below the height we are looking for
@@ -386,7 +387,7 @@ int32_t komodo_state::NotarizedData(int32_t nHeight,uint256 *notarized_hashp,uin
                 }
             }
         }
-        if ( !found ) // we still haven't found what we were looking for
+        if ( !found ) // we still haven't found what we were looking for (because the cached NPOINTS_last_index did not help)
         {
             np = nullptr; // reset
             for (size_t i = 0; i < NPOINTS.size(); i++) // linear search from the start
@@ -436,7 +437,8 @@ int32_t komodo_state::NotarizedHeight(int32_t *prevMoMheightp,uint256 *hashp,uin
     {
         *hashp = last.notarized_hash;
         *txidp = last.notarized_desttxid;
-        *prevMoMheightp = PrevMoMHeight();
+        *prevMoMheightp = PrevMoMHeight();  // Is *prevMoMheightp not the same as last.notarized_height? See the PrevMoMHeight() impl
+                                            // but apparently *prevMoMheightp is not used
     }
     return last.notarized_height;
 }
