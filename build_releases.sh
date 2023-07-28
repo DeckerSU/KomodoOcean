@@ -5,8 +5,8 @@ force_rebuild_containers=false
 
 build_xenial=false
 build_focal=false
-build_windows=true
-build_macos=false
+build_windows=false
+build_macos=true
 
 # we should rebuild linux depends before build for different linux os
 if [[ $build_xenial == true && $build_focal == true ]]; then
@@ -25,13 +25,13 @@ download_and_check_macos_sdk() {
         if [[ -n $actual_checksum ]]; then
             # Compare checksums
             if [[ "$actual_checksum" == "$expected_checksum" ]]; then
-                echo "File already exists and has the correct checksum. Skipping download."
+                echo "MacOS SDK already exists and has the correct checksum. Skipping download."
                 return
             fi
         fi
     fi
 
-    echo "Downloading file..."
+    echo "Downloading MacOS SDK ..."
     # Download the file
     curl -L -o "$output_file" "$url"
 
@@ -40,14 +40,14 @@ download_and_check_macos_sdk() {
 
     # Compare checksums
     if [[ "$actual_checksum" != "$expected_checksum" ]]; then
-        echo "ERROR: Downloaded file has an invalid checksum."
+        echo "ERROR: Downloaded MacOS SDK has an invalid checksum."
         exit 1
     fi
 
-    echo "File downloaded successfully and has a valid checksum."
+    echo "MacOS SDK downloaded successfully and has a valid checksum."
 }
 
-delete_artifacts() {
+delete_artefacts() {
     local release_name=$1
 
     if [[ "$release_name" = "windows" ]]; then
@@ -72,10 +72,11 @@ delete_artifacts() {
     rm -f "${WORKSPACE}/${binary}${ext}" || false
     done
 
-    echo "Deleting artifacts from ${WORKSPACE} ..."
-    # delete possible artifacts from previous build(s)
-    find ${WORKSPACE}/src \( -name "*.a" -o -name "*.la" -o -name "*.o" -o -name "*.lo" -o -name "*.Plo" -o -name "*.Po" -o -name "*.lai" -o -name "*.dirstamp" \) -delete # -print 
-    find ${WORKSPACE}/src \( -name "*.a" -o -name "*.la" -o -name "*.o" -o -name "*.lo" -o -name "*.Plo" -o -name "*.Po" -o -name "*.lai" -o -name "*.dirstamp" \) -path "*/.*" -delete # -print 
+    echo "Deleting artefacts from ${WORKSPACE} ..."
+    # delete possible artefacts from previous build(s)
+    find ${WORKSPACE}/src \( -name "*.a" -o -name "*.la" -o -name "*.o" -o -name "*.lo" -o -name "*.Plo" -o -name "*.Po" -o -name "*.lai" -o -name "*.dirstamp" \) -delete
+    find ${WORKSPACE}/src \( -name "*.a" -o -name "*.la" -o -name "*.o" -o -name "*.lo" -o -name "*.Plo" -o -name "*.Po" -o -name "*.lai" -o -name "*.dirstamp" \) -path "*/.*" -delete
+    rm -f ${WORKSPACE}/src/qt/moc_*.cpp # delete meta object code files, otherwise we will have MacOS after Linux/Windows build error
 }
 
 copy_release() {
@@ -99,11 +100,17 @@ copy_release() {
 
     for binary in "${binaries[@]}"
     do
-        if [[ "$release_name" = "windows" ]]; then
+        case $release_name in
+        windows)
             docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "/usr/bin/x86_64-w64-mingw32-strip ${WORKSPACE}/${binary}${ext}" || false
-        else
+            ;;
+        macos)
+            docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "${WORKSPACE}/depends/x86_64-apple-darwin19/native/bin/x86_64-apple-darwin19-strip ${WORKSPACE}/${binary}${ext}" || false
+            ;;
+        *)
             strip "${WORKSPACE}/${binary}${ext}" || false
-        fi
+            ;;
+        esac
         cp -f "${WORKSPACE}/${binary}${ext}" "${WORKSPACE}/releases/${release_name}/"
     done
 
@@ -119,6 +126,10 @@ copy_release() {
         windows)
             echo "Performing actions for Windows..."
             mv "${WORKSPACE}/releases/${release_name}/komodo-qt${ext}" "${WORKSPACE}/releases/${release_name}/komodo-qt-windows${ext}"
+            ;;
+        macos)
+            echo "Performing actions for Windows..."
+            mv "${WORKSPACE}/releases/${release_name}/komodo-qt${ext}" "${WORKSPACE}/releases/${release_name}/komodo-qt-mac${ext}"
             ;;
         *)
             echo "Unknown release name: $release_name"
@@ -146,8 +157,8 @@ if [[ "${build_xenial}" = "true" ]]; then
         rm -rf ${WORKSPACE}/depends/built/x86_64-unknown-linux-gnu
         rm -rf ${WORKSPACE}/depends/x86_64-unknown-linux-gnu
     fi
-    # delete possible artifacts from previous build(s)
-    delete_artifacts xenial
+    # delete possible artefacts from previous build(s)
+    delete_artefacts xenial
 
     if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_xenial_builder)" -eq 0 ]]; then
         echo "Container 'ocean_xenial_builder' rebuilding ..."
@@ -166,8 +177,8 @@ if [[ "${build_focal}" = "true" ]]; then
         rm -rf ${WORKSPACE}/depends/built/x86_64-unknown-linux-gnu
         rm -rf ${WORKSPACE}/depends/x86_64-unknown-linux-gnu
     fi
-    # delete possible artifacts from previous build(s)
-    delete_artifacts focal
+    # delete possible artefacts from previous build(s)
+    delete_artefacts focal
 
     if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
         echo "Container 'ocean_focal_builder' rebuilding ..."
@@ -180,7 +191,7 @@ fi
 
 ### windows
 if [[ "${build_windows}" = "true" ]]; then
-    delete_artifacts windows
+    delete_artefacts windows
 
     if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
         echo "Container 'ocean_focal_builder' rebuilding ..."
@@ -193,7 +204,16 @@ fi
 
 ### macos
 if [[ "${build_macos}" = "true" ]]; then
-    echo "Building MacOs ... "
+    download_and_check_macos_sdk
+    delete_artefacts macos
+
+    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
+        echo "Container 'ocean_focal_builder' rebuilding ..."
+        docker build -f Dockerfile.focal.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_focal_builder .
+    fi
+
+    docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-mac-cross.sh -j'$(expr $(nproc) - 1)
+    copy_release macos
 fi
 
 popd
