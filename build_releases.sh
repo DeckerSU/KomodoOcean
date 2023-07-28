@@ -4,8 +4,9 @@ delete_linux_depends=false
 force_rebuild_containers=false
 
 build_xenial=false
-build_focal=true
-build_windows=false
+build_focal=false
+build_windows=true
+build_macos=false
 
 # we should rebuild linux depends before build for different linux os
 if [[ $build_xenial == true && $build_focal == true ]]; then
@@ -182,5 +183,9 @@ if [[ "${build_windows}" = "true" ]]; then
     copy_release windows
 fi
 
+### macos
+if [[ "${build_macos}" = "true" ]]; then
+
+fi
 
 popd
