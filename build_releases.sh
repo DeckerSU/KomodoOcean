@@ -164,6 +164,8 @@ echo "Workspace directory: ${WORKSPACE}"
 command -v awk >/dev/null 2>&1 || { echo >&2 "ERROR: awk command not found."; exit 1; }
 # Check if sha256sum command exists
 command -v sha256sum >/dev/null 2>&1 || { echo >&2 "ERROR: sha256sum command not found."; exit 1; }
+# Simple check if docker exists
+command -v docker >/dev/null 2>&1 || { echo >&2 "ERROR: docker not found."; exit 1; }
 
 ### xenial
 if [[ "${build_xenial}" = "true" ]]; then
