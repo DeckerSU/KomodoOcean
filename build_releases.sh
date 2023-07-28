@@ -3,9 +3,9 @@
 delete_linux_depends=false
 force_rebuild_containers=false
 
-build_xenial=false
-build_focal=false
-build_windows=false
+build_xenial=true
+build_focal=true
+build_windows=true
 build_macos=true
 
 # we should rebuild linux depends before build for different linux os
@@ -128,13 +128,29 @@ copy_release() {
             mv "${WORKSPACE}/releases/${release_name}/komodo-qt${ext}" "${WORKSPACE}/releases/${release_name}/komodo-qt-windows${ext}"
             ;;
         macos)
-            echo "Performing actions for Windows..."
+            echo "Performing actions for MacOS..."
+            docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "make deploy" || false
+            cp -f ${WORKSPACE}/*.dmg "${WORKSPACE}/releases/${release_name}/"
             mv "${WORKSPACE}/releases/${release_name}/komodo-qt${ext}" "${WORKSPACE}/releases/${release_name}/komodo-qt-mac${ext}"
             ;;
         *)
             echo "Unknown release name: $release_name"
             ;;
     esac
+}
+
+check_image_focal() {
+    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
+        echo "Container 'ocean_focal_builder' rebuilding ..."
+        docker build -f Dockerfile.focal.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_focal_builder .
+    fi
+}
+
+check_image_xenial() {
+    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_xenial_builder)" -eq 0 ]]; then
+        echo "Container 'ocean_xenial_builder' rebuilding ..."
+        docker build -f Dockerfile.xenial.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_xenial_builder .
+    fi
 }
 
 # https://stackoverflow.com/questions/4774054/reliable-way-for-a-bash-script-to-get-the-full-path-to-itself
@@ -160,10 +176,7 @@ if [[ "${build_xenial}" = "true" ]]; then
     # delete possible artefacts from previous build(s)
     delete_artefacts xenial
 
-    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_xenial_builder)" -eq 0 ]]; then
-        echo "Container 'ocean_xenial_builder' rebuilding ..."
-        docker build -f Dockerfile.xenial.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_xenial_builder .
-    fi
+    check_image_xenial
 
     docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_xenial_builder /bin/bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
     copy_release xenial
@@ -180,10 +193,7 @@ if [[ "${build_focal}" = "true" ]]; then
     # delete possible artefacts from previous build(s)
     delete_artefacts focal
 
-    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
-        echo "Container 'ocean_focal_builder' rebuilding ..."
-        docker build -f Dockerfile.focal.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_focal_builder .
-    fi
+    check_image_focal
 
     docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
     copy_release focal
@@ -193,10 +203,7 @@ fi
 if [[ "${build_windows}" = "true" ]]; then
     delete_artefacts windows
 
-    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
-        echo "Container 'ocean_focal_builder' rebuilding ..."
-        docker build -f Dockerfile.focal.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_focal_builder .
-    fi
+    check_image_focal
 
     docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-win.sh -j'$(expr $(nproc) - 1)
     copy_release windows
@@ -207,10 +214,7 @@ if [[ "${build_macos}" = "true" ]]; then
     download_and_check_macos_sdk
     delete_artefacts macos
 
-    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
-        echo "Container 'ocean_focal_builder' rebuilding ..."
-        docker build -f Dockerfile.focal.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_focal_builder .
-    fi
+    check_image_focal
 
     docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-mac-cross.sh -j'$(expr $(nproc) - 1)
     copy_release macos
