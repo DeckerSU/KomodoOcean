@@ -141,7 +141,7 @@ if [[ "${build_xenial}" = "true" ]]; then
     # delete possible artifacts from previous build(s)
     delete_artifacts xenial
 
-    if [[ "${force_rebuild_containers}" = "true" ]] || ! docker ps -aqf "name=ocean_xenial_builder" >/dev/null; then
+    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_xenial_builder)" -eq 0 ]]; then
         echo "Container 'ocean_xenial_builder' rebuilding ..."
         docker build -f Dockerfile.xenial.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_xenial_builder .
     fi
@@ -161,7 +161,7 @@ if [[ "${build_focal}" = "true" ]]; then
     # delete possible artifacts from previous build(s)
     delete_artifacts focal
 
-    if [[ "${force_rebuild_containers}" = "true" ]] || ! docker ps -aqf "name=ocean_focal_builder" >/dev/null; then
+    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
         echo "Container 'ocean_focal_builder' rebuilding ..."
         docker build -f Dockerfile.focal.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_focal_builder .
     fi
@@ -174,7 +174,7 @@ fi
 if [[ "${build_windows}" = "true" ]]; then
     delete_artifacts windows
 
-    if [[ "${force_rebuild_containers}" = "true" ]] || ! docker ps -aqf "name=ocean_focal_builder" >/dev/null; then
+    if [[ "${force_rebuild_containers}" == "true" || "$(docker images --format '{{.Repository}}' | grep -c ocean_focal_builder)" -eq 0 ]]; then
         echo "Container 'ocean_focal_builder' rebuilding ..."
         docker build -f Dockerfile.focal.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_focal_builder .
     fi
@@ -185,7 +185,7 @@ fi
 
 ### macos
 if [[ "${build_macos}" = "true" ]]; then
-
+    echo "Building MacOs ... "
 fi
 
 popd
