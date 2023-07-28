@@ -99,8 +99,12 @@ copy_release() {
 
     for binary in "${binaries[@]}"
     do
-    strip "${WORKSPACE}/${binary}${ext}" || false
-    cp -f "${WORKSPACE}/${binary}${ext}" "${WORKSPACE}/releases/${release_name}/"
+        if [[ "$release_name" = "windows" ]]; then
+            docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "/usr/bin/x86_64-w64-mingw32-strip ${WORKSPACE}/${binary}${ext}" || false
+        else
+            strip "${WORKSPACE}/${binary}${ext}" || false
+        fi
+        cp -f "${WORKSPACE}/${binary}${ext}" "${WORKSPACE}/releases/${release_name}/"
     done
 
     case $release_name in
@@ -111,6 +115,10 @@ copy_release() {
         focal)
             echo "Performing actions for Focal..."
             mv "${WORKSPACE}/releases/${release_name}/komodo-qt" "${WORKSPACE}/releases/${release_name}/komodo-qt-linux"
+            ;;
+        windows)
+            echo "Performing actions for Windows..."
+            mv "${WORKSPACE}/releases/${release_name}/komodo-qt${ext}" "${WORKSPACE}/releases/${release_name}/komodo-qt-windows${ext}"
             ;;
         *)
             echo "Unknown release name: $release_name"
@@ -179,7 +187,7 @@ if [[ "${build_windows}" = "true" ]]; then
         docker build -f Dockerfile.focal.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_focal_builder .
     fi
 
-    docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-win.sh -j$(nproc --all)'
+    docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-win.sh -j'$(expr $(nproc) - 1)
     copy_release windows
 fi
 
