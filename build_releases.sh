@@ -8,6 +8,10 @@ build_focal=true
 build_windows=true
 build_macos=true
 
+# You cannot use Ctrl-C to interrupt the build during a Docker session because it is not interactive. 
+# If you want to interrupt the build, use the command `docker kill` with needed container name from 
+# `docker ps` instead of pressing Ctrl-C.
+
 # we should rebuild linux depends before build for different linux os
 if [[ $build_xenial == true && $build_focal == true ]]; then
   delete_linux_depends=true
