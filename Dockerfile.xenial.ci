@@ -1,0 +1,33 @@
+FROM ubuntu:16.04
+# Environment for build KomodoOcean
+
+# Build container:
+# docker build -f Dockerfile.xenial.ci --build-arg BUILDER_NAME=$USER --build-arg BUILDER_UID=$(id -u) --build-arg BUILDER_GID=$(id -g) -t ocean_xenial_builder .
+# Run interactive session in build environment:
+# docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root -it ocean_xenial_builder
+# Run build itself:
+# delete ./built/x86_64-unknown-linux-gnu before build (!) other version of linux, then do:
+# ./zcutil/clean-help-dev.sh ; make clean ; zcutil/build.sh -j$(nproc --all)
+# 
+# docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_xenial_builder /bin/bash -c "./zcutil/clean-help-dev.sh ; make clean ; zcutil/build.sh -j$(nproc --all)"
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILDER_NAME=builder
+ARG BUILDER_UID=1000
+ARG BUILDER_GID=1000
+ENV TZ=Europe/Amsterdam
+
+RUN \
+    apt-get update && apt-get install --no-install-recommends -y apt-transport-https ca-certificates curl &&\
+    sed -i 's/archive\.ubuntu\.com/mirror\.nl\.leaseweb\.net/g' /etc/apt/sources.list &&\
+    sed -i 's/http:/https:/g' /etc/apt/sources.list &&\
+    apt-get update && apt-get install -y sudo &&\
+    groupadd --gid ${BUILDER_GID} --force ${BUILDER_NAME} &&\
+    adduser --disabled-password --gecos '' --no-create-home $BUILDER_NAME --uid ${BUILDER_UID} --gid ${BUILDER_GID} &&\
+    adduser $BUILDER_NAME sudo &&\
+    echo "$BUILDER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/$BUILDER_NAME &&\
+    apt-get install --no-install-recommends -y build-essential pkg-config libc6-dev m4 g++-multilib autoconf libtool ncurses-dev unzip git python bison zlib1g-dev wget libcurl4-gnutls-dev bsdmainutils automake &&\
+    chmod -R 777 /root
+RUN \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
