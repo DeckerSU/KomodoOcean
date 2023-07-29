@@ -3,7 +3,7 @@
 delete_linux_depends=false
 force_rebuild_containers=false
 
-build_xenial=true
+build_xenial=false
 build_focal=true
 build_windows=true
 build_macos=true
