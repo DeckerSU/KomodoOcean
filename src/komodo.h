@@ -787,13 +787,6 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
                             fwrite(&signedmask,1,sizeof(signedmask),signedfp);
                             fflush(signedfp);
                         }
-                        if ( opretlen > len && scriptbuf[len] == 'A' )
-                        {
-                            //for (i=0; i<opretlen-len; i++)
-                            //    LogPrintf("%02x",scriptbuf[len+i]);
-                            //LogPrintf(" Found extradata.[%d] %d - %d\n",opretlen-len,opretlen,len);
-                            komodo_stateupdate(height,0,0,0,txhash,0,0,0,0,0,0,value,&scriptbuf[len],opretlen-len+4+3+(scriptbuf[1] == 0x4d),j,zero,0);
-                        }
                     }
                 } //else if ( fJustCheck )
                 //    return (-3); // if the notarisation is only invalid because its out of order it cannot be mined in a block with a valid one!
@@ -818,9 +811,6 @@ int32_t komodo_voutupdate(bool fJustCheck,int32_t *isratificationp,int32_t notar
                     LogPrintf("ISRATIFICATION (%s)\n",(char *)&scriptbuf[len+32*2+4]);
                 }
             }
-
-            if ( *isratificationp == 0 && (signedmask != 0 || (scriptbuf[len] != 'X' && scriptbuf[len] != 'A')) ) // && scriptbuf[len] != 'I')
-                komodo_stateupdate(height,0,0,0,txhash,0,0,0,0,0,0,value,&scriptbuf[len],opretlen,j,zero,0);
         }
     }
     return(notaryid);
