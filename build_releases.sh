@@ -8,10 +8,6 @@ build_focal=true
 build_windows=true
 build_macos=true
 
-# You cannot use Ctrl-C to interrupt the build during a Docker session because it is not interactive. 
-# If you want to interrupt the build, use the command `docker kill` with needed container name from 
-# `docker ps` instead of pressing Ctrl-C.
-
 # we should rebuild linux depends before build for different linux os
 if [[ $build_xenial == true && $build_focal == true ]]; then
   delete_linux_depends=true
@@ -106,10 +102,10 @@ copy_release() {
     do
         case $release_name in
         windows)
-            docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "/usr/bin/x86_64-w64-mingw32-strip ${WORKSPACE}/${binary}${ext}" || false
+            docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "/usr/bin/x86_64-w64-mingw32-strip ${WORKSPACE}/${binary}${ext}" || false
             ;;
         macos)
-            docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "${WORKSPACE}/depends/x86_64-apple-darwin19/native/bin/x86_64-apple-darwin19-strip ${WORKSPACE}/${binary}${ext}" || false
+            docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "${WORKSPACE}/depends/x86_64-apple-darwin19/native/bin/x86_64-apple-darwin19-strip ${WORKSPACE}/${binary}${ext}" || false
             ;;
         *)
             strip "${WORKSPACE}/${binary}${ext}" || false
@@ -133,7 +129,7 @@ copy_release() {
             ;;
         macos)
             echo "Performing actions for MacOS..."
-            docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "make deploy" || false
+            docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "make deploy" || false
             cp -f ${WORKSPACE}/*.dmg "${WORKSPACE}/releases/${release_name}/"
             mv "${WORKSPACE}/releases/${release_name}/komodo-qt${ext}" "${WORKSPACE}/releases/${release_name}/komodo-qt-mac${ext}"
             ;;
@@ -184,7 +180,7 @@ if [[ "${build_xenial}" = "true" ]]; then
 
     check_image_xenial
 
-    docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_xenial_builder /bin/bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
+    docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_xenial_builder /bin/bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
     copy_release xenial
 fi
 
@@ -201,7 +197,7 @@ if [[ "${build_focal}" = "true" ]]; then
 
     check_image_focal
 
-    docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
+    docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
     copy_release focal
 fi
 
@@ -211,7 +207,7 @@ if [[ "${build_windows}" = "true" ]]; then
 
     check_image_focal
 
-    docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-win.sh -j'$(expr $(nproc) - 1)
+    docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-win.sh -j'$(expr $(nproc) - 1)
     copy_release windows
 fi
 
@@ -222,7 +218,7 @@ if [[ "${build_macos}" = "true" ]]; then
 
     check_image_focal
 
-    docker run -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-mac-cross.sh -j'$(expr $(nproc) - 1)
+    docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c 'zcutil/build-mac-cross.sh -j'$(expr $(nproc) - 1)
     copy_release macos
 fi
 
