@@ -11,7 +11,7 @@ $(package)_patches=cargo.config 0001-Start-using-cargo-clippy-for-CI.patch remov
 $(package)_rust_target=$(if $(rust_rust_target_$(canonical_host)),$(rust_rust_target_$(canonical_host)),$(canonical_host))
 
 ifeq ($(host_os),mingw32)
-$(package)_library_file=target/x86_64-pc-windows-gnu/release/rustzcash.lib
+$(package)_library_file=target/x86_64-pc-windows-gnu/release/librustzcash.a
 else ifneq ($(canonical_host),$(build))
   ifeq ($(build_os)$(host_os),darwindarwin)
     $(package)_library_file=target/release/librustzcash.a
