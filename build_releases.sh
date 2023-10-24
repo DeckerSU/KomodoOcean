@@ -105,7 +105,7 @@ copy_release() {
             docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "/usr/bin/x86_64-w64-mingw32-strip ${WORKSPACE}/${binary}${ext}" || false
             ;;
         macos)
-            docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "${WORKSPACE}/depends/x86_64-apple-darwin19/native/bin/x86_64-apple-darwin19-strip ${WORKSPACE}/${binary}${ext}" || false
+            docker run -it -u $(id -u ${USER}):$(id -g ${USER}) -v $PWD:$PWD -w $PWD -e HOME=/root ocean_focal_builder /bin/bash -c "${WORKSPACE}/depends/x86_64-apple-darwin/native/bin/x86_64-apple-darwin-strip ${WORKSPACE}/${binary}${ext}" || false
             ;;
         *)
             strip "${WORKSPACE}/${binary}${ext}" || false
