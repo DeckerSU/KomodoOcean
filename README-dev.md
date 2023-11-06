@@ -120,3 +120,18 @@ after each different build.
 ### part 6
 
 For some reason moving out `PKG_CONFIG_SYSROOT_DIR`, `PKG_CONFIG_LIBDIR`, `QT_MAC_SDK_NO_VERSION_CHECK` environment variables into $(package)_config_env as mentione here - https://github.com/bitcoin/bitcoin/commit/affbf58a1e52a8e60c830be6a9e0347e0ff4c28e doesn't work for Qt package build, so we define them in `$(package)_config_cmds` in `qt.mk`.
+
+### part 7
+
+Valgrind usage example:
+
+- https://stackoverflow.com/questions/5134891/how-do-i-use-valgrind-to-find-memory-leaks
+
+```bash
+valgrind --leak-check=full \
+         --show-leak-kinds=all \
+         --track-origins=yes \
+         --verbose \
+         --log-file=valgrind-out.txt \
+         ./src/komodo-test --gtest_filter=ParseArgumentsTests.*:DeckerTests.*
+```
