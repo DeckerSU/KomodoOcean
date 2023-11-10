@@ -3,6 +3,8 @@
 WORKSPACE=$(pwd)
 echo "Workspace directory: ${WORKSPACE}"
 
+chown -R ${BUILDER_GID}:${BUILDER_UID} ${WORKSPACE}
+
 groupadd --gid ${BUILDER_GID} --force ${BUILDER_NAME}
 adduser --disabled-password --gecos '' --no-create-home $BUILDER_NAME --uid ${BUILDER_UID} --gid ${BUILDER_GID}
 adduser $BUILDER_NAME sudo
