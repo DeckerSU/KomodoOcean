@@ -202,7 +202,8 @@ if false; then
     fi
 else
     emulate_build
-    printenv
+    # all environment variables of docker container are accessible here,
+    # you can use BUILDER_NAME or GITHUB_SHA, or GITHUB_ACTOR, etc.
 fi
 EOF
 

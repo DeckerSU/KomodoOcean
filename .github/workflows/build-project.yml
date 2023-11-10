@@ -4,7 +4,6 @@ on:
       - opened
       - synchronize
       - reopened
-      - closed
     branches:
       - static-experimental
       - static
@@ -27,6 +26,7 @@ jobs:
           echo "builder_name=$(echo $USER)" >> $GITHUB_OUTPUT
           echo "builder_uid=$(id -u)" >> $GITHUB_OUTPUT
           echo "builder_gid=$(id -g)" >> $GITHUB_OUTPUT
+          echo "is_fork=${{ github.event.pull_request.head.repo.fork }}"
         id: set_variables_step
 
       - name: Print variables
@@ -38,6 +38,7 @@ jobs:
           echo "builder_name: ${{ steps.set_variables_step.outputs.builder_name }}"
           echo "builder_uid: ${{ steps.set_variables_step.outputs.builder_uid }}"
           echo "builder_gid: ${{ steps.set_variables_step.outputs.builder_gid }}"
+          echo "is_fork: ${{ steps.set_variables_step.outputs.is_fork }}"
 
       - name: Build app in docker container
         uses: ./.github/actions/build-project-docker
