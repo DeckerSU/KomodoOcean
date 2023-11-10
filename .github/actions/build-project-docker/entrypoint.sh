@@ -162,7 +162,7 @@ groupadd --gid ${BUILDER_GID} --force ${BUILDER_NAME}
 adduser --disabled-password --gecos '' --no-create-home $BUILDER_NAME --uid ${BUILDER_UID} --gid ${BUILDER_GID}
 adduser $BUILDER_NAME sudo
 echo "$BUILDER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/$BUILDER_NAME
-su ${BUILDER_NAME}
+su -m ${BUILDER_NAME}
 echo "User: $(whoami)"
 echo "Current directory: $(pwd)"
 
