@@ -69,3 +69,10 @@ jobs:
           name: komodoocean-macos-${{ steps.set_variables_step.outputs.sha_short }}
           path: |
             ./releases/macos
+
+      - name: Cleanup
+          if: always()
+          run: |
+            echo "Post-job Cleanup"
+            rm -rf ${{ github.workspace }}/*
+          shell: bash
