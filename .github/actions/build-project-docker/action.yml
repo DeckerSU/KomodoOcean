@@ -14,7 +14,7 @@ inputs:
 runs:
   using: 'docker'
   image: 'Dockerfile.focal.ci'
-  env: # These environment variables are not used in the actual build. They are just provided as an example of how we can pass them if necessary.
+  env:
     BUILDER_NAME: ${{ inputs.builder-name }}
     BUILDER_UID: ${{ inputs.builder-uid }}
     BUILDER_GID: ${{ inputs.builder-gid }}

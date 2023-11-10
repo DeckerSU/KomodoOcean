@@ -14,8 +14,8 @@ echo "Workspace directory: ${WORKSPACE}"
 delete_linux_depends=false
 
 build_focal=true
-build_windows=true
-build_macos=true
+build_windows=false
+build_macos=false
 
 download_and_check_macos_sdk() {
     url="https://bitcoincore.org/depends-sources/sdks/Xcode-12.1-12A7403-extracted-SDK-with-libcxx-headers.tar.gz"
