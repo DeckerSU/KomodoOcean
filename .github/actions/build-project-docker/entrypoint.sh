@@ -5,6 +5,7 @@ adduser --disabled-password --gecos '' --no-create-home $BUILDER_NAME --uid ${BU
 adduser $BUILDER_NAME sudo
 echo "$BUILDER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/$BUILDER_NAME
 
+# there may be a better way to continue building as a user builder with the same UID and GID as the host runner
 su -m $BUILDER_NAME << 'EOF'
 echo "User: $(whoami)"
 WORKSPACE=$(pwd)
@@ -165,7 +166,7 @@ emulate_build() {
     echo test > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
 }
 
-if true; then
+if false; then
     # Check if awk command exists
     command -v awk >/dev/null 2>&1 || { echo >&2 "ERROR: awk command not found."; exit 1; }
     # Check if sha256sum command exists
