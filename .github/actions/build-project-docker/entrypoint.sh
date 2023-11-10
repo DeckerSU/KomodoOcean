@@ -149,10 +149,10 @@ emulate_build() {
                     [[ "$file" == "komodo-qt" ]] && file=${file}-windows
                     ;;
             esac
-            echo test > ${WORKSPACE}/releases/${folder}/${file}${extension}
+            sudo -H -u ${BUILDER_UID}:${BUILDER_GID} echo test > ${WORKSPACE}/releases/${folder}/${file}${extension}
         done
     done
-    echo test > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
+    sudo -H -u ${BUILDER_UID}:${BUILDER_GID} > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
 }
 
 WORKSPACE=$(pwd)
@@ -195,3 +195,4 @@ if false; then
 else
     emulate_build
 fi
+
