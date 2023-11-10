@@ -163,6 +163,8 @@ adduser --disabled-password --gecos '' --no-create-home $BUILDER_NAME --uid ${BU
 adduser $BUILDER_NAME sudo
 echo "$BUILDER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/$BUILDER_NAME
 su ${BUILDER_NAME}
+echo "User: $(whoami)"
+echo "Current directory: $(pwd)"
 
 if false; then
     # Check if awk command exists
