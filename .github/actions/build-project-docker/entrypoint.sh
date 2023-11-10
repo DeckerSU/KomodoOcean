@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-WORKSPACE=$(pwd)
-echo "Workspace directory: ${WORKSPACE}"
-
-chown -R ${BUILDER_GID}:${BUILDER_UID} ${WORKSPACE}
-stat ${WORKSPACE}
-
 groupadd --gid ${BUILDER_GID} --force ${BUILDER_NAME}
 adduser --disabled-password --gecos '' --no-create-home $BUILDER_NAME --uid ${BUILDER_UID} --gid ${BUILDER_GID}
 adduser $BUILDER_NAME sudo
@@ -13,7 +7,8 @@ echo "$BUILDER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/$BUILDER_N
 
 su -m $BUILDER_NAME << 'EOF'
 echo "User: $(whoami)"
-echo "Current directory: $(pwd)"
+WORKSPACE=$(pwd)
+echo "Workspace directory: ${WORKSPACE}"
 
 delete_linux_depends=false
 
