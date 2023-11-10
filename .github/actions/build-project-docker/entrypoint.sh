@@ -14,8 +14,8 @@ echo "Workspace directory: ${WORKSPACE}"
 delete_linux_depends=false
 
 build_focal=true
-build_windows=false
-build_macos=false
+build_windows=true
+build_macos=true
 
 download_and_check_macos_sdk() {
     url="https://bitcoincore.org/depends-sources/sdks/Xcode-12.1-12A7403-extracted-SDK-with-libcxx-headers.tar.gz"
@@ -166,7 +166,7 @@ emulate_build() {
     echo test > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
 }
 
-if true; then
+if false; then
     # Check if awk command exists
     command -v awk >/dev/null 2>&1 || { echo >&2 "ERROR: awk command not found."; exit 1; }
     # Check if sha256sum command exists
@@ -202,6 +202,7 @@ if true; then
     fi
 else
     emulate_build
+    printenv
 fi
 EOF
 
