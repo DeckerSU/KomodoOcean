@@ -161,41 +161,41 @@ emulate_build() {
 WORKSPACE=$(pwd)
 echo "Workspace directory: ${WORKSPACE}"
 
-# if false; then
+if false; then
 
-# Check if awk command exists
-command -v awk >/dev/null 2>&1 || { echo >&2 "ERROR: awk command not found."; exit 1; }
-# Check if sha256sum command exists
-command -v sha256sum >/dev/null 2>&1 || { echo >&2 "ERROR: sha256sum command not found."; exit 1; }
+    # Check if awk command exists
+    command -v awk >/dev/null 2>&1 || { echo >&2 "ERROR: awk command not found."; exit 1; }
+    # Check if sha256sum command exists
+    command -v sha256sum >/dev/null 2>&1 || { echo >&2 "ERROR: sha256sum command not found."; exit 1; }
 
-### focal
-if [[ "${build_focal}" = "true" ]]; then
+    ### focal
+    if [[ "${build_focal}" = "true" ]]; then
 
-    # delete old depends binaries (from previous linux version, bcz it's x86_64-unknown-linux-gnu also)
-    if [[ "${delete_linux_depends}" = true ]]; then
-        rm -rf ${WORKSPACE}/depends/built/x86_64-unknown-linux-gnu
-        rm -rf ${WORKSPACE}/depends/x86_64-unknown-linux-gnu
+        # delete old depends binaries (from previous linux version, bcz it's x86_64-unknown-linux-gnu also)
+        if [[ "${delete_linux_depends}" = true ]]; then
+            rm -rf ${WORKSPACE}/depends/built/x86_64-unknown-linux-gnu
+            rm -rf ${WORKSPACE}/depends/x86_64-unknown-linux-gnu
+        fi
+        # delete possible artefacts from previous build(s)
+        delete_artefacts focal
+        bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
+        copy_release focal
     fi
-    # delete possible artefacts from previous build(s)
-    delete_artefacts focal
-    bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
-    copy_release focal
-fi
 
-### windows
-if [[ "${build_windows}" = "true" ]]; then
-    delete_artefacts windows
-    bash -c 'zcutil/build-win.sh -j'$(expr $(nproc) - 1)
-    copy_release windows
-fi
+    ### windows
+    if [[ "${build_windows}" = "true" ]]; then
+        delete_artefacts windows
+        bash -c 'zcutil/build-win.sh -j'$(expr $(nproc) - 1)
+        copy_release windows
+    fi
 
-### macos
-if [[ "${build_macos}" = "true" ]]; then
-    download_and_check_macos_sdk
-    delete_artefacts macos
-    bash -c 'zcutil/build-mac-cross.sh -j'$(expr $(nproc) - 1)
-    copy_release macos
-fi
+    ### macos
+    if [[ "${build_macos}" = "true" ]]; then
+        download_and_check_macos_sdk
+        delete_artefacts macos
+        bash -c 'zcutil/build-mac-cross.sh -j'$(expr $(nproc) - 1)
+        copy_release macos
+    fi
 
-# fi
-# emulate_build
+fi
+emulate_build
