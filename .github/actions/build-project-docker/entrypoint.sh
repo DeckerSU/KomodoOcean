@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+
+delete_linux_depends=false
+
+build_focal=true
+build_windows=true
+build_macos=true
+
+download_and_check_macos_sdk() {
+    url="https://bitcoincore.org/depends-sources/sdks/Xcode-12.1-12A7403-extracted-SDK-with-libcxx-headers.tar.gz"
+    output_file="Xcode-12.1-12A7403-extracted-SDK-with-libcxx-headers.tar.gz"
+    expected_checksum="be17f48fd0b08fb4dcd229f55a6ae48d9f781d210839b4ea313ef17dd12d6ea5"
+
+    # Check if file exists
+    if [[ -f "$output_file" ]]; then
+        # Calculate checksum of the file
+        actual_checksum=$(sha256sum "$output_file" 2>/dev/null | awk '{print $1}')
+        if [[ -n $actual_checksum ]]; then
+            # Compare checksums
+            if [[ "$actual_checksum" == "$expected_checksum" ]]; then
+                echo "MacOS SDK already exists and has the correct checksum. Skipping download."
+                return
+            fi
+        fi
+    fi
+
+    echo "Downloading MacOS SDK ..."
+    # Download the file
+    curl -L -o "$output_file" "$url"
+
+    # Calculate checksum of the downloaded file
+    actual_checksum=$(sha256sum "$output_file" | awk '{print $1}')
+
+    # Compare checksums
+    if [[ "$actual_checksum" != "$expected_checksum" ]]; then
+        echo "ERROR: Downloaded MacOS SDK has an invalid checksum."
+        exit 1
+    fi
+
+    echo "MacOS SDK downloaded successfully and has a valid checksum."
+}
+
+delete_artefacts() {
+    local release_name=$1
+
+    if [[ "$release_name" = "windows" ]]; then
+    ext=".exe"
+    else
+    ext=""
+    fi
+
+    mkdir -p ${WORKSPACE}/releases/${release_name}
+
+    binaries=(
+    "src/komodod"
+    "src/wallet-utility"
+    "src/komodo-tx"
+    "src/komodo-cli"
+    "src/komodo-test"
+    "src/qt/komodo-qt"
+    )
+
+    for binary in "${binaries[@]}"
+    do
+    rm -f "${WORKSPACE}/${binary}${ext}" || false
+    done
+
+    echo "Deleting artefacts from ${WORKSPACE} ..."
+    # delete possible artefacts from previous build(s)
+    find ${WORKSPACE}/src \( -name "*.a" -o -name "*.la" -o -name "*.o" -o -name "*.lo" -o -name "*.Plo" -o -name "*.Po" -o -name "*.lai" -o -name "*.dirstamp" \) -delete
+    find ${WORKSPACE}/src \( -name "*.a" -o -name "*.la" -o -name "*.o" -o -name "*.lo" -o -name "*.Plo" -o -name "*.Po" -o -name "*.lai" -o -name "*.dirstamp" \) -path "*/.*" -delete
+    rm -f ${WORKSPACE}/src/qt/moc_*.cpp # delete meta object code files, otherwise we will have MacOS after Linux/Windows build error
+}
+
+copy_release() {
+    local release_name=$1
+
+    if [[ "$release_name" = "windows" ]]; then
+    ext=".exe"
+    else
+    ext=""
+    fi
+
+    mkdir -p ${WORKSPACE}/releases/${release_name}
+
+    binaries=(
+    "src/komodod"
+    "src/wallet-utility"
+    "src/komodo-tx"
+    "src/komodo-cli"
+    "src/qt/komodo-qt"
+    )
+
+    for binary in "${binaries[@]}"
+    do
+        case $release_name in
+        windows)
+            bash -c "/usr/bin/x86_64-w64-mingw32-strip ${WORKSPACE}/${binary}${ext}" || false
+            ;;
+        macos)
+            bash -c "${WORKSPACE}/depends/x86_64-apple-darwin/native/bin/x86_64-apple-darwin-strip ${WORKSPACE}/${binary}${ext}" || false
+            ;;
+        *)
+            strip "${WORKSPACE}/${binary}${ext}" || false
+            ;;
+        esac
+        cp -f "${WORKSPACE}/${binary}${ext}" "${WORKSPACE}/releases/${release_name}/"
+    done
+
+    case $release_name in
+        xenial)
+            echo "Performing actions for Xenial..."
+            mv "${WORKSPACE}/releases/${release_name}/komodo-qt" "${WORKSPACE}/releases/${release_name}/komodo-qt-linux"
+            ;;
+        focal)
+            echo "Performing actions for Focal..."
+            mv "${WORKSPACE}/releases/${release_name}/komodo-qt" "${WORKSPACE}/releases/${release_name}/komodo-qt-linux"
+            ;;
+        windows)
+            echo "Performing actions for Windows..."
+            mv "${WORKSPACE}/releases/${release_name}/komodo-qt${ext}" "${WORKSPACE}/releases/${release_name}/komodo-qt-windows${ext}"
+            ;;
+        macos)
+            echo "Performing actions for MacOS..."
+            bash -c "make deploy" || false
+            cp -f ${WORKSPACE}/*.dmg "${WORKSPACE}/releases/${release_name}/"
+            mv "${WORKSPACE}/releases/${release_name}/komodo-qt${ext}" "${WORKSPACE}/releases/${release_name}/komodo-qt-mac${ext}"
+            ;;
+        *)
+            echo "Unknown release name: $release_name"
+            ;;
+    esac
+}
+
+emulate_build() {
+
+    mkdir -p ${WORKSPACE}/releases/macos
+    mkdir -p ${WORKSPACE}/releases/windows
+    mkdir -p ${WORKSPACE}/releases/focal
+
+    echo test > ${WORKSPACE}/releases/focal/komodo-qt-linux
+    echo test > ${WORKSPACE}/releases/focal/komodo-cli
+    echo test > ${WORKSPACE}/releases/focal/komodo-tx
+    echo test > ${WORKSPACE}/releases/focal/wallet-utility
+    echo test > ${WORKSPACE}/releases/focal/komodod
+    
+    echo test > ${WORKSPACE}/releases/macos/komodo-qt-mac
+    echo test > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
+    echo test > ${WORKSPACE}/releases/macos/komodo-cli
+    echo test > ${WORKSPACE}/releases/macos/komodo-tx
+    echo test > ${WORKSPACE}/releases/macos/wallet-utility
+    echo test > ${WORKSPACE}/releases/macos/komodod
+
+    echo test > ${WORKSPACE}/releases/windows/komodo-qt-windows.exe
+    echo test > ${WORKSPACE}/releases/windows/komodo-cli.exe
+    echo test > ${WORKSPACE}/releases/windows/komodo-tx.exe
+    echo test > ${WORKSPACE}/releases/windows/wallet-utility.exe
+    echo test > ${WORKSPACE}/releases/windows/komodod.exe
+}
+
+WORKSPACE=$(pwd)
+echo "Workspace directory: ${WORKSPACE}"
+
+# if false; then
+
+# Check if awk command exists
+command -v awk >/dev/null 2>&1 || { echo >&2 "ERROR: awk command not found."; exit 1; }
+# Check if sha256sum command exists
+command -v sha256sum >/dev/null 2>&1 || { echo >&2 "ERROR: sha256sum command not found."; exit 1; }
+
+### focal
+if [[ "${build_focal}" = "true" ]]; then
+
+    # delete old depends binaries (from previous linux version, bcz it's x86_64-unknown-linux-gnu also)
+    if [[ "${delete_linux_depends}" = true ]]; then
+        rm -rf ${WORKSPACE}/depends/built/x86_64-unknown-linux-gnu
+        rm -rf ${WORKSPACE}/depends/x86_64-unknown-linux-gnu
+    fi
+    # delete possible artefacts from previous build(s)
+    delete_artefacts focal
+    bash -c 'zcutil/build.sh -j'$(expr $(nproc) - 1)
+    copy_release focal
+fi
+
+### windows
+if [[ "${build_windows}" = "true" ]]; then
+    delete_artefacts windows
+    bash -c 'zcutil/build-win.sh -j'$(expr $(nproc) - 1)
+    copy_release windows
+fi
+
+### macos
+if [[ "${build_macos}" = "true" ]]; then
+    download_and_check_macos_sdk
+    delete_artefacts macos
+    bash -c 'zcutil/build-mac-cross.sh -j'$(expr $(nproc) - 1)
+    copy_release macos
+fi
+
+# fi
+# emulate_build

@@ -1,0 +1,64 @@
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - static-experimental
+      - static
+
+jobs:
+  build-project-job:
+    runs-on: ubuntu-latest
+    name: Build project job
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set variables
+        run: |
+          echo "branch=$(echo ${{ github.ref }} | sed 's/refs\/heads\///g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_OUTPUT
+          echo "builder_name=$(echo $USER)" >> $GITHUB_OUTPUT
+          echo "builder_uid=$(id -u)" >> $GITHUB_OUTPUT
+          echo "builder_gid=$(id -g)" >> $GITHUB_OUTPUT
+        id: set_variables_step
+
+      - name: Print variables
+        run: |
+          echo "Event type: ${{ github.event.name }}"
+          echo "Repository name: ${{ github.event.repository.name }}"
+          echo "Branch: ${{ steps.set_variables_step.outputs.branch }}"
+          echo "Commit: ${{ steps.set_variables_step.outputs.sha_short }}"
+          echo "builder_name: ${{ steps.set_variables_step.outputs.builder_name }}"
+          echo "builder_uid: ${{ steps.set_variables_step.outputs.builder_uid }}"
+          echo "builder_gid: ${{ steps.set_variables_step.outputs.builder_gid }}"
+
+      - name: Build app in docker container
+        uses: ./.github/actions/build-project-docker
+        id: build-in-docker
+        with:
+          builder-name: '${{ steps.set_variables_step.outputs.builder_name }}'
+          builder-uid: '${{ steps.set_variables_step.outputs.builder_uid }}'
+          builder-gid: '${{ steps.set_variables_step.outputs.builder_gid }}'
+
+      # we don't want use strategy / matrix here, bcz in this case matrix will be used
+      # for entire job and docker containet will be rebuild several times
+      - name: Archive artifacts (Linux)
+        uses: actions/upload-artifact@v3
+        with:
+          name: komodoocean-linux-${{ steps.set_variables_step.outputs.sha_short }}
+          path: |
+            ./releases/focal
+
+      - name: Archive artifacts (Windows)
+        uses: actions/upload-artifact@v3
+        with:
+          name: komodoocean-windows-${{ steps.set_variables_step.outputs.sha_short }}
+          path: |
+            ./releases/windows
+
+      - name: Archive artifacts (MacOS)
+        uses: actions/upload-artifact@v3
+        with:
+          name: komodoocean-macos-${{ steps.set_variables_step.outputs.sha_short }}
+          path: |
+            ./releases/macos
