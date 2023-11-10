@@ -166,7 +166,7 @@ emulate_build() {
     echo test > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
 }
 
-if false; then
+if true; then
     # Check if awk command exists
     command -v awk >/dev/null 2>&1 || { echo >&2 "ERROR: awk command not found."; exit 1; }
     # Check if sha256sum command exists
