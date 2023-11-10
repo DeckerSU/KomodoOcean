@@ -133,36 +133,32 @@ copy_release() {
 }
 
 emulate_build() {
-
-    mkdir -p ${WORKSPACE}/releases/macos
-    mkdir -p ${WORKSPACE}/releases/windows
-    mkdir -p ${WORKSPACE}/releases/focal
-
-    echo test > ${WORKSPACE}/releases/focal/komodo-qt-linux
-    echo test > ${WORKSPACE}/releases/focal/komodo-cli
-    echo test > ${WORKSPACE}/releases/focal/komodo-tx
-    echo test > ${WORKSPACE}/releases/focal/wallet-utility
-    echo test > ${WORKSPACE}/releases/focal/komodod
-    
-    echo test > ${WORKSPACE}/releases/macos/komodo-qt-mac
+    for folder in macos windows focal; do
+        mkdir -p ${WORKSPACE}/releases/${folder}
+        for file in komodo-qt komodo-cli komodo-tx wallet-utility komodod; do
+            extension=""
+            case ${folder} in
+                focal)
+                    [[ "$file" == "komodo-qt" ]] && file=${file}-linux
+                ;;
+                macos)
+                    [[ "$file" == "komodo-qt" ]] && file=${file}-mac
+                    ;;
+                windows)
+                    extension=".exe"
+                    [[ "$file" == "komodo-qt" ]] && file=${file}-windows
+                    ;;
+            esac
+            echo test > ${WORKSPACE}/releases/${folder}/${file}${extension}
+        done
+    done
     echo test > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
-    echo test > ${WORKSPACE}/releases/macos/komodo-cli
-    echo test > ${WORKSPACE}/releases/macos/komodo-tx
-    echo test > ${WORKSPACE}/releases/macos/wallet-utility
-    echo test > ${WORKSPACE}/releases/macos/komodod
-
-    echo test > ${WORKSPACE}/releases/windows/komodo-qt-windows.exe
-    echo test > ${WORKSPACE}/releases/windows/komodo-cli.exe
-    echo test > ${WORKSPACE}/releases/windows/komodo-tx.exe
-    echo test > ${WORKSPACE}/releases/windows/wallet-utility.exe
-    echo test > ${WORKSPACE}/releases/windows/komodod.exe
 }
 
 WORKSPACE=$(pwd)
 echo "Workspace directory: ${WORKSPACE}"
 
 if false; then
-
     # Check if awk command exists
     command -v awk >/dev/null 2>&1 || { echo >&2 "ERROR: awk command not found."; exit 1; }
     # Check if sha256sum command exists
@@ -196,6 +192,6 @@ if false; then
         bash -c 'zcutil/build-mac-cross.sh -j'$(expr $(nproc) - 1)
         copy_release macos
     fi
-
+else
+    emulate_build
 fi
-emulate_build
