@@ -149,14 +149,20 @@ emulate_build() {
                     [[ "$file" == "komodo-qt" ]] && file=${file}-windows
                     ;;
             esac
-            sudo -H -u ${BUILDER_UID}:${BUILDER_GID} echo test > ${WORKSPACE}/releases/${folder}/${file}${extension}
+            echo test > ${WORKSPACE}/releases/${folder}/${file}${extension}
         done
     done
-    sudo -H -u ${BUILDER_UID}:${BUILDER_GID} > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
+    echo test > ${WORKSPACE}/releases/macos/KomodoOcean-0.8.1-beta1.dmg
 }
 
 WORKSPACE=$(pwd)
 echo "Workspace directory: ${WORKSPACE}"
+
+groupadd --gid ${BUILDER_GID} --force ${BUILDER_NAME}
+adduser --disabled-password --gecos '' --no-create-home $BUILDER_NAME --uid ${BUILDER_UID} --gid ${BUILDER_GID}
+adduser $BUILDER_NAME sudo
+echo "$BUILDER_NAME ALL=(ALL:ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/$BUILDER_NAME
+su ${BUILDER_NAME}
 
 if false; then
     # Check if awk command exists
