@@ -1063,6 +1063,19 @@ void komodo_args(char *argv0)
         LogPrintf( "Cannot be STAKED and KMD notary at the same time!\n");
         StartShutdown();
     }
+    SoftSetArg("-ac_name", std::string("ZDEEX"));
+    SoftSetArg("-ac_supply", std::string("0"));
+    SoftSetArg("-ac_adaptivepow", std::string("6"));
+    SoftSetArg("-ac_eras", std::string("3"));
+    SoftSetArg("-ac_reward", std::string("300000000,200000000,100000000"));
+    SoftSetArg("-ac_end", std::string("600000,3600000,7200000"));
+    SoftSetArg("-ac_staked", std::string("50"));
+    SoftSetArg("-ac_blocktime", std::string("30"));
+    SoftSetArg("-ac_sapling", std::string("1"));
+    SoftSetArg("-addnode", std::string("node.zdeex.org"));
+    SoftSetArg("-addnode", std::string("node1.zdeex.org"));
+    SoftSetArg("-addnode", std::string("node2.zdeex.org"));
+	
 	std::string name = GetArg("-ac_name","");
     if ( argv0 != 0 )
     {
