@@ -367,8 +367,14 @@ UniValue getinfo(const UniValue& params, bool fHelp, const CPubKey& mypk)
             obj.push_back(Pair("commission",        ASSETCHAINS_COMMISSION));
         if ( ASSETCHAINS_STAKED != 0 )
             obj.push_back(Pair("staked",        ASSETCHAINS_STAKED));
-        if ( ASSETCHAINS_ALGO != ASSETCHAINS_EQUIHASH )
-            obj.push_back(Pair("algo",ASSETCHAINS_ALGORITHMS[ASSETCHAINS_ALGO]));
+        if ( ASSETCHAINS_ALGO == ASSETCHAINS_EQUIHASH ) {
+            uint64_t N = ASSETCHAINS_NK[0] ? ASSETCHAINS_NK[0] : 192;
+            uint64_t K = ASSETCHAINS_NK[1] ? ASSETCHAINS_NK[1] : 7;
+            std::string equihash_algo = "equihash (" + std::to_string(N) + "," + std::to_string(K) + ")";
+            obj.push_back(Pair("algo",equihash_algo));
+	    } else {
+            obj.push_back(Pair("algo", ASSETCHAINS_ALGORITHMS[ASSETCHAINS_ALGO]));
+        }
     }
     return obj;
 }
