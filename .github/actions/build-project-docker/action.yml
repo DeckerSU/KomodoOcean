@@ -1,0 +1,20 @@
+# https://docs.github.com/en/actions/creating-actions/creating-a-docker-container-action
+name: 'Build project in docker'
+description: 'Create docker image with build environment and build the project'
+inputs:
+  builder-name:
+    required: true
+    default: 'builder'
+  builder-uid:
+    required: true
+    default: 1000
+  builder-gid:
+    required: true
+    default: 1000
+runs:
+  using: 'docker'
+  image: 'Dockerfile.focal.ci'
+  env:
+    BUILDER_NAME: ${{ inputs.builder-name }}
+    BUILDER_UID: ${{ inputs.builder-uid }}
+    BUILDER_GID: ${{ inputs.builder-gid }}

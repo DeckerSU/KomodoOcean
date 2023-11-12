@@ -1,0 +1,17 @@
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Amsterdam
+
+RUN \
+    apt-get update && apt-get install --no-install-recommends -y ca-certificates curl &&\
+    apt-get install --no-install-recommends -y build-essential pkg-config libc6-dev m4 g++-multilib autoconf libtool ncurses-dev unzip git python bison zlib1g-dev wget libcurl4-gnutls-dev bsdmainutils automake &&\
+    apt-get install --no-install-recommends -y mingw-w64 &&\
+    echo 1 | update-alternatives --config x86_64-w64-mingw32-gcc &&\
+    echo 1 | update-alternatives --config x86_64-w64-mingw32-g++ &&\
+    apt-get install --no-install-recommends -y librsvg2-bin libtiff-tools cmake imagemagick libcap-dev libz-dev libbz2-dev python3-setuptools libtinfo5 xorriso sudo
+RUN \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
