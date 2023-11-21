@@ -7,21 +7,49 @@
 # after an OSX cross-compile. Normally these files should be
 # cleaned during `make clean` execution.
 
-rm ./src/qt/moc_*.cpp
-rm ./src/qt/*.moc
+is_git_root=0
 
-# this will partially recreate *.Po and *.Plo in .deps
+function check_git_root() {
 
-# https://unix.stackexchange.com/questions/84265/linux-shell-find-exec-in-find-exec
-find ./src/ -name ".deps" -type d -exec sh -c 'find {} -name "*.Po" -type f -delete' \;
-find ./src/ -name ".deps" -type d -exec sh -c 'find {} -name "*.Plo" -type f -delete' \;
+  local dir=$(pwd)
 
-# https://askubuntu.com/questions/377438/how-can-i-recursively-delete-all-files-of-a-specific-extension-in-the-current-di
-find ./src/ -name "*.Po" -type f -delete
-find ./src/ -name "*.Plo" -type f -delete
-find ./src/ -name ".dirstamp" -type f -delete
+  while [[ "$dir" != "" && ! -d "$dir/.git" ]]; do
+    dir=${dir%/*} # ${parameter%word}
+  done
 
-rm ./src/qt/libkomodoqt.a
-rm ./src/leveldb/libmemenv.a
-rm ./src/leveldb/libleveldb_sse42.a
-rm ./src/leveldb/libleveldb.a
+  if [ "$dir" == "" ]; then
+    echo "$(pwd) is not in a Git repository."
+    is_git_root=0
+  else
+    if [ "$dir" != "$(pwd)" ]; then
+      echo "$(pwd) is not the root of the Git repository."
+      is_git_root=0
+    else
+      echo "$(pwd) is the root of the Git repository."
+      is_git_root=1
+    fi
+  fi
+}
+
+check_git_root
+
+if [ "$is_git_root" -eq "1" ]; then
+
+    rm -f ./src/qt/moc_*.cpp # delete meta object code files, otherwise we will have MacOS after Linux/Windows build error
+    rm -f ./src/qt/*.moc
+    rm -f ./src/qt/libkomodoqt.a
+    rm -f ./src/leveldb/libmemenv.a
+    rm -f ./src/leveldb/libleveldb_sse42.a
+    rm -f ./src/leveldb/libleveldb.a
+
+    # https://unix.stackexchange.com/questions/84265/linux-shell-find-exec-in-find-exec
+    # https://askubuntu.com/questions/377438/how-can-i-recursively-delete-all-files-of-a-specific-extension-in-the-current-di
+
+    # search for *.a, *.la, *.o, *.lo, *.Plo, *.Po, *.lai, *.dirstamp in all folders starting from .src, including hidden folders,
+    # to search only in hidden folders add -path "*/.*" arg to command
+    find ./src \( -name "*.a" -o -name "*.la" -o -name "*.o" -o -name "*.lo" -o -name "*.Plo" -o -name "*.Po" -o -name "*.lai" -o -name "*.dirstamp" \) -delete
+
+fi
+
+
+
