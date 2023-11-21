@@ -41,6 +41,8 @@ if [ "$is_git_root" -eq "1" ]; then
     rm -f ./src/leveldb/libmemenv.a
     rm -f ./src/leveldb/libleveldb_sse42.a
     rm -f ./src/leveldb/libleveldb.a
+    rm -f ./src/qt/qrc_komodo.cpp
+    rm -f ./src/qt/qrc_komodo_locale.cpp
 
     # https://unix.stackexchange.com/questions/84265/linux-shell-find-exec-in-find-exec
     # https://askubuntu.com/questions/377438/how-can-i-recursively-delete-all-files-of-a-specific-extension-in-the-current-di
