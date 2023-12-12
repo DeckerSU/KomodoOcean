@@ -182,7 +182,7 @@ int32_t komodo_waituntilelegible(uint32_t blocktime, int32_t stakeHeight, uint32
         }
         if( !GetBoolArg("-gen",false) ) 
             return(0);
-        sleep(1);
+        MilliSleep(1000);
         adjustedtime = (int64_t)GetAdjustedTime();
     } 
     return(1);
@@ -1269,11 +1269,7 @@ void static VerusStaker(CWallet *pwallet)
 
     while ( (ASSETCHAIN_INIT == 0 || KOMODO_INITDONE == 0) ) //chainActive.Tip()->GetHeight() != 235300 &&
     {
-#ifdef WIN32
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-#else
-        sleep(1);
-#endif
+        MilliSleep(1000);
         if ( komodo_baseid(ASSETCHAINS_SYMBOL) < 0 )
             break;
     }
@@ -1315,11 +1311,7 @@ void static VerusStaker(CWallet *pwallet)
                 // wait to try another staking block until after the tip moves again
                 while ( chainActive.LastTip() == pindexPrev )
                 {
-#ifdef WIN32
-                  boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-#else
-                  sleep(1);
-#endif
+                    MilliSleep(1000);
                 }
                 continue;
             }
@@ -1402,12 +1394,7 @@ void static VerusStaker(CWallet *pwallet)
             // Check for stop or if block needs to be rebuilt
             boost::this_thread::interruption_point();
 
-#ifdef WIN32
-            boost::this_thread::sleep(boost::posix_time::milliseconds(3000));
-#else
-            sleep(3);
-#endif
-
+            MilliSleep(3000);
             // In regression test mode, stop mining after a block is found.
             if (chainparams.MineBlocksOnDemand()) {
                 throw boost::thread_interrupted();
@@ -1448,12 +1435,7 @@ void static BitcoinMiner_noeq()
 
     while ( (ASSETCHAIN_INIT == 0 || KOMODO_INITDONE == 0) ) //chainActive.Tip()->GetHeight() != 235300 &&
     {
-#ifdef WIN32
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-#else
-        sleep(1);
-#endif
-
+        MilliSleep(1000);
         if ( komodo_baseid(ASSETCHAINS_SYMBOL) < 0 )
             break;
     }
@@ -1483,12 +1465,7 @@ void static BitcoinMiner_noeq()
             waitForPeers(chainparams);
 
             pindexPrev = chainActive.LastTip();
-#ifdef WIN32
-            boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-#else
-            sleep(1);
-#endif
-
+            MilliSleep(1000);
             // prevent forking on startup before the diff algorithm kicks in
             if (pindexPrev->GetHeight() < 50 || pindexPrev != chainActive.LastTip())
             {
@@ -1549,12 +1526,7 @@ void static BitcoinMiner_noeq()
                         static uint32_t counter;
                         if ( counter++ < 10 )
                             LogPrintf("skip generating %s on-demand block, no tx avail\n",ASSETCHAINS_SYMBOL);
-#ifdef WIN32
-                        boost::this_thread::sleep(boost::posix_time::milliseconds(10000));
-#else
-                        sleep(10);
-#endif
-
+                        MilliSleep(10000);
                         continue;
                     } else LogPrintf("%s vouts.%d mining.%d vs %d\n",ASSETCHAINS_SYMBOL,(int32_t)pblock->vtx[0].vout.size(),Mining_height,ASSETCHAINS_MINHEIGHT);
                 }
@@ -1645,12 +1617,7 @@ void static BitcoinMiner_noeq()
                         if (pblock->nSolution.size() != 1344)
                         {
                             LogPrintf("ERROR: Block solution is not 1344 bytes as it should be");
-#ifdef WIN32
-                            boost::this_thread::sleep(boost::posix_time::milliseconds(5000));
-#else
-                            sleep(5);
-#endif
-
+                            MilliSleep(5000);
                             break;
                         }
 
@@ -1780,12 +1747,7 @@ void static BitcoinMiner()
     uint8_t *script; uint64_t total; int32_t i,j,gpucount=KOMODO_MAXGPUCOUNT,notaryid = -1;
     while ( (ASSETCHAIN_INIT == 0 || KOMODO_INITDONE == 0) )
     {
-#ifdef WIN32
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-#else
-        sleep(1);
-#endif
-
+        MilliSleep(1000);
         if ( komodo_baseid(ASSETCHAINS_SYMBOL) < 0 )
             break;
     }
@@ -1875,12 +1837,7 @@ void static BitcoinMiner()
                 static uint32_t counter;
                 if ( counter++ < 10 && ASSETCHAINS_STAKED == 0 )
                     LogPrintf("created illegal block, retry\n");
-#ifdef WIN32
-                boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-#else
-                sleep(1);
-#endif
-
+                MilliSleep(1000);
                 continue;
             }
             //LogPrintf("get template\n");
@@ -1905,12 +1862,7 @@ void static BitcoinMiner()
                         static uint32_t counter;
                         if ( counter++ < 10 )
                             LogPrintf("skip generating %s on-demand block, no tx avail\n",ASSETCHAINS_SYMBOL);
-#ifdef WIN32
-                        boost::this_thread::sleep(boost::posix_time::milliseconds(10000));
-#else
-                        sleep(10);
-#endif
-
+                        MilliSleep(10000);
                         continue;
                     } else LogPrintf("%s vouts.%d mining.%d vs %d\n",ASSETCHAINS_SYMBOL,(int32_t)pblock->vtx[0].vout.size(),Mining_height,ASSETCHAINS_MINHEIGHT);
                 }
@@ -2062,12 +2014,7 @@ void static BitcoinMiner()
                         //LogPrintf("need to wait %d seconds to submit block\n",(int32_t)(B.nTime - GetAdjustedTime()));
                         while ( GetAdjustedTime() < B.nTime-2 )
                         {
-#ifdef WIN32
-                            boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-#else
-                            sleep(1);
-#endif
-
+                            MilliSleep(1000);
                             if ( chainActive.LastTip()->GetHeight() >= Mining_height )
                             {
                                 LogPrintf("new block arrived\n");
