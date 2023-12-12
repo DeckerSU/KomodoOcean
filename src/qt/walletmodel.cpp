@@ -46,6 +46,9 @@
 #include <QSet>
 #include <QTimer>
 
+#include <QThread>
+#include <QMutex>
+
 /* from rpcwallet.cpp */
 extern CAmount getBalanceZaddr(std::string address, int minDepth = 1, bool ignoreUnspendable=true);
 extern CAmount getBalanceTaddr(std::string transparentAddress, int minDepth=1, bool ignoreUnspendable=true);
@@ -64,6 +67,44 @@ extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 // transaction.h comment: spending taddr output requires CTxIn >= 148 bytes and typical taddr txout is 34 bytes
 #define CTXIN_SPEND_DUST_SIZE   148
 #define CTXOUT_REGULAR_SIZE     34
+
+/* Check MCL balances asynchronously to prevent hanging the UI thread. */
+class BalanceWorker : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit BalanceWorker(WalletModel* model) : model_(model) {}
+
+public Q_SLOTS:
+    void process()
+    {
+        QMutexLocker locker(&mutex_);
+        qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+        if (currentTime - lastBalanceCheckTime_ < 60 * 1000) // 60 seconds has not yet passed
+        {
+            // Q_EMIT balanceCalculated(lastActivatedBalance_, lastLCLBalance_);
+            return;
+        }
+
+        lastActivatedBalance_ = model_->getActivatedBalance();
+        lastLCLBalance_ = model_->getLCLBalance();
+        lastBalanceCheckTime_ = currentTime;
+        Q_EMIT balanceCalculated(lastActivatedBalance_, lastLCLBalance_);
+    }
+
+Q_SIGNALS:
+    void balanceCalculated(CAmount newActivatedBalance, CAmount newLCLBalance);
+
+private:
+    WalletModel* model_;
+    QMutex mutex_;
+    CAmount lastActivatedBalance_{};
+    CAmount lastLCLBalance_{};
+    qint64 lastBalanceCheckTime_;
+};
+
+#include "walletmodel.moc"
 
 WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, OptionsModel *_optionsModel, QObject *parent) :
     QObject(parent), wallet(_wallet), optionsModel(_optionsModel), addressTableModel(0), zaddressTableModel(0),
@@ -225,12 +266,24 @@ void WalletModel::checkMarmaraBalanceChanged()
     // called from pollBalanceChanged, which called when pollTimer acts (every MODEL_UPDATE_DELAY = 250 sec.)
     // TODO: we should force checkMarmaraBalanceChanged on every block
 
-    CAmount newActivatedBalance = getActivatedBalance();
-    CAmount newLCLBalance = getLCLBalance();
+    /*
+            // old code that causes the UI to freeze
+            CAmount newActivatedBalance = getActivatedBalance();
+            CAmount newLCLBalance = getLCLBalance();
+            Q_EMIT marmaraBalanceChanged(newActivatedBalance, newLCLBalance);
+    */
 
-    // use caching?
+    QThread* thread = new QThread;
+    BalanceWorker* worker = new BalanceWorker(this);
+    worker->moveToThread(thread);
 
-    Q_EMIT marmaraBalanceChanged(newActivatedBalance, newLCLBalance);
+    connect(thread, &QThread::started, worker, &BalanceWorker::process);
+    connect(worker, &BalanceWorker::balanceCalculated, this, &WalletModel::marmaraBalanceChanged);
+    connect(worker, &BalanceWorker::balanceCalculated, thread, &QThread::quit);
+    connect(worker, &BalanceWorker::balanceCalculated, worker, &BalanceWorker::deleteLater);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+
+    thread->start();
 }
 
 void WalletModel::checkBalanceChanged()
