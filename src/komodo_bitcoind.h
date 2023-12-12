@@ -3038,7 +3038,7 @@ int32_t komodo_staked(CMutableTransaction &txNew,uint32_t nBits,uint32_t *blockt
                     earliest = eligible;
                     best_scriptPubKey = kp->scriptPubKey;
                     *utxovaluep = (uint64_t)kp->nValue;
-                    decode_hex((uint8_t *)utxotxidp,32,(char *)kp->txid.GetHex().c_str());
+                    *utxotxidp = kp->txid;
                     *utxovoutp = kp->vout;
                     *txtimep = kp->txtime;
                 }
@@ -3061,7 +3061,7 @@ int32_t komodo_staked(CMutableTransaction &txNew,uint32_t nBits,uint32_t *blockt
     }
     if (earliest != 0)
     {
-        bool signSuccess; SignatureData sigdata; uint64_t txfee; uint8_t *ptr; uint256 revtxid,utxotxid;
+        bool signSuccess; SignatureData sigdata; uint64_t txfee; uint8_t *ptr; uint256 utxotxid;
         auto consensusBranchId = CurrentEpochBranchId(chainActive.Height() + 1, Params().GetConsensus());
         const CKeyStore& keystore = *pwalletMain;
 
@@ -3069,10 +3069,7 @@ int32_t komodo_staked(CMutableTransaction &txNew,uint32_t nBits,uint32_t *blockt
         txNew.vin.resize(1);
         txNew.vout.resize(1);
         txfee = 0;
-        for (i=0; i<32; i++)
-            ((uint8_t *)&revtxid)[i] = ((uint8_t *)utxotxidp)[31 - i];
-        
-        txNew.vin[0].prevout.hash = revtxid;
+        txNew.vin[0].prevout.hash = *utxotxidp;
         txNew.vin[0].prevout.n = *utxovoutp;
         txNew.vout[0].scriptPubKey = best_scriptPubKey;
         txNew.vout[0].nValue = *utxovaluep - txfee;
