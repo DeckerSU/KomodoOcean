@@ -418,6 +418,11 @@ void openDebugLogfile()
         QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathDebug)));
 }
 
+void OpenDonateURI()
+{
+    QDesktopServices::openUrl(QUrl("https://getalby.com/p/decker"));
+}
+
 bool openKomodoConf()
 {
     boost::filesystem::path pathConfig = GetConfigFile();

@@ -113,6 +113,8 @@ namespace GUIUtil
     // Open debug.log
     void openDebugLogfile();
 
+    void OpenDonateURI();
+
     // Open the config file
     bool openKomodoConf();
 

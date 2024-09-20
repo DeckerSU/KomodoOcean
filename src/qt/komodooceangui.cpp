@@ -116,6 +116,7 @@ KomodoOceanGUI::KomodoOceanGUI(const PlatformStyle *_platformStyle, const Networ
     openRPCConsoleAction(0),
     openAction(0),
     showHelpMessageAction(0),
+    donateAction(0),
     trayIcon(0),
     trayIconMenu(0),
     notificator(0),
@@ -397,8 +398,12 @@ void KomodoOceanGUI::createActions()
     showHelpMessageAction->setMenuRole(QAction::NoRole);
     showHelpMessageAction->setStatusTip(tr("Show the %1 help message to get a list with possible Komodo command-line options").arg(tr(PACKAGE_NAME)));
 
+    donateAction = new QAction(tr("Donate to developers..."), this);
+    donateAction->setStatusTip(tr("Donate to developers..."));
+
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
+    connect(donateAction, SIGNAL(triggered()), this, SLOT(donateClicked()));
     connect(aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
     connect(optionsAction, SIGNAL(triggered()), this, SLOT(optionsClicked()));
     connect(toggleHideAction, SIGNAL(triggered()), this, SLOT(toggleHidden()));
@@ -468,6 +473,7 @@ void KomodoOceanGUI::createMenuBar()
     }
     help->addAction(showHelpMessageAction);
     help->addSeparator();
+    help->addAction(donateAction);
     help->addAction(aboutAction);
     help->addAction(aboutQtAction);
 }
@@ -685,6 +691,11 @@ void KomodoOceanGUI::aboutClicked()
 
     HelpMessageDialog dlg(this, true);
     dlg.exec();
+}
+
+void KomodoOceanGUI::donateClicked()
+{
+    GUIUtil::OpenDonateURI();
 }
 
 void KomodoOceanGUI::showDebugWindow()

@@ -114,6 +114,7 @@ private:
     QAction *openRPCConsoleAction;
     QAction *openAction;
     QAction *showHelpMessageAction;
+    QAction *donateAction;
 
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
@@ -217,6 +218,7 @@ private Q_SLOTS:
     void optionsClicked();
     /** Show about dialog */
     void aboutClicked();
+    void donateClicked();
     /** Show debug window */
     void showDebugWindow();
     /** Show debug window and set focus to the console */
