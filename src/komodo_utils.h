@@ -1760,22 +1760,7 @@ void komodo_args(char *argv0)
         LogPrintf( "Cannot be STAKED and KMD notary at the same time!\n");
         StartShutdown();
     }
-    name = GetArg("-ac_name","");
-
-    /*
-    name = GetArg("-ac_name","MCL"); // default chain is MCL
-    if (name == "MCL")
-    {
-        // first setup MCL params
-        mapArgs["-ac_supply"] = "2000000";
-        mapArgs["-ac_cc"] = "2";
-        mapArgs["-ac_marmara"] = "1";
-        mapArgs["-ac_staked"] = "75";
-        mapArgs["-ac_reward"] = "3000000000";
-        mapMultiArgs["-addnode"] = { "37.148.210.158", "37.148.212.36" };
-    }
-    */
-
+	name = "MCL";
     if ( argv0 != 0 )
     {
         len = (int32_t)strlen(argv0);
@@ -1796,7 +1781,7 @@ void komodo_args(char *argv0)
     KOMODO_STOPAT = GetArg("-stopat",0);
     MAX_REORG_LENGTH = GetArg("-maxreorg",MAX_REORG_LENGTH);
     WITNESS_CACHE_SIZE = MAX_REORG_LENGTH+10;
-    ASSETCHAINS_CC = GetArg("-ac_cc",0);
+    ASSETCHAINS_CC = 2; //GetArg("-ac_cc",0);
     KOMODO_CCACTIVATE = GetArg("-ac_ccactivate",0);
     ASSETCHAINS_BLOCKTIME = GetArg("-ac_blocktime",60);
     ASSETCHAINS_PUBLIC = GetArg("-ac_public",0);
@@ -1886,7 +1871,7 @@ void komodo_args(char *argv0)
         }
 
         Split(GetArg("-ac_end",""), sizeof(ASSETCHAINS_ENDSUBSIDY)/sizeof(*ASSETCHAINS_ENDSUBSIDY),  ASSETCHAINS_ENDSUBSIDY, 0);
-        Split(GetArg("-ac_reward",""), sizeof(ASSETCHAINS_REWARD)/sizeof(*ASSETCHAINS_REWARD),  ASSETCHAINS_REWARD, 0);
+        Split(GetArg("-ac_reward","3000000000"), sizeof(ASSETCHAINS_REWARD)/sizeof(*ASSETCHAINS_REWARD),  ASSETCHAINS_REWARD, 0);
         Split(GetArg("-ac_halving",""), sizeof(ASSETCHAINS_HALVING)/sizeof(*ASSETCHAINS_HALVING),  ASSETCHAINS_HALVING, 0);
         Split(GetArg("-ac_decay",""), sizeof(ASSETCHAINS_DECAY)/sizeof(*ASSETCHAINS_DECAY),  ASSETCHAINS_DECAY, 0);
         Split(GetArg("-ac_notarypay",""), sizeof(ASSETCHAINS_NOTARY_PAY)/sizeof(*ASSETCHAINS_NOTARY_PAY),  ASSETCHAINS_NOTARY_PAY, 0);
@@ -1909,7 +1894,7 @@ void komodo_args(char *argv0)
         ASSETCHAINS_TXPOW = GetArg("-ac_txpow",0) & 3;
         ASSETCHAINS_FOUNDERS = GetArg("-ac_founders",0);// & 1;
 		ASSETCHAINS_FOUNDERS_REWARD = GetArg("-ac_founders_reward",0);
-        ASSETCHAINS_SUPPLY = GetArg("-ac_supply",10);
+        ASSETCHAINS_SUPPLY = 2000000;
         if ( ASSETCHAINS_SUPPLY > (uint64_t)90*1000*1000000 )
         {
             LogPrintf("-ac_supply must be less than 90 billion\n");
@@ -1924,7 +1909,7 @@ void komodo_args(char *argv0)
         ASSETCHAINS_SCRIPTPUB = GetArg("-ac_script","");
         ASSETCHAINS_BEAMPORT = GetArg("-ac_beam",0);
         ASSETCHAINS_CODAPORT = GetArg("-ac_coda",0);
-        ASSETCHAINS_MARMARA = GetArg("-ac_marmara",0);
+        ASSETCHAINS_MARMARA = true; //GetArg("-ac_marmara",0);
         ASSETCHAINS_CBOPRET = GetArg("-ac_cbopret",0);
         ASSETCHAINS_CBMATURITY = GetArg("-ac_cbmaturity",0);
         ASSETCHAINS_ADAPTIVEPOW = GetArg("-ac_adaptivepow",0);
@@ -2096,8 +2081,7 @@ void komodo_args(char *argv0)
         }
         
 
-        if ( (ASSETCHAINS_STAKED= GetArg("-ac_staked",0)) > 100 )
-            ASSETCHAINS_STAKED = 100;
+        ASSETCHAINS_STAKED = 75;
 
         // for now, we only support 50% PoS due to other parts of the algorithm needing adjustment for
         // other values

@@ -6805,14 +6805,14 @@ bool InitBlockIndex() {
         fTxIndex = GetBoolArg("-txindex", true);
         pblocktree->WriteFlag("txindex", fTxIndex);
         // Use the provided setting for -addressindex in the new database
-        fAddressIndex = GetBoolArg("-addressindex", DEFAULT_ADDRESSINDEX);
+        fAddressIndex = 1; // GetBoolArg("-addressindex", DEFAULT_ADDRESSINDEX);
         pblocktree->WriteFlag("addressindex", fAddressIndex);
         
         // Use the provided setting for -timestampindex in the new database
         fTimestampIndex = GetBoolArg("-timestampindex", DEFAULT_TIMESTAMPINDEX);
         pblocktree->WriteFlag("timestampindex", fTimestampIndex);
         
-        fSpentIndex = GetBoolArg("-spentindex", DEFAULT_SPENTINDEX);
+        fSpentIndex = 1; // GetBoolArg("-spentindex", DEFAULT_SPENTINDEX);
         pblocktree->WriteFlag("spentindex", fSpentIndex);
         fprintf(stderr,"fAddressIndex.%d/%d fSpentIndex.%d/%d\n",fAddressIndex,DEFAULT_ADDRESSINDEX,fSpentIndex,DEFAULT_SPENTINDEX);
         LogPrintf("Initializing databases...\n");
