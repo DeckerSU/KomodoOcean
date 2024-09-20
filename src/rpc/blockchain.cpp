@@ -398,29 +398,30 @@ UniValue getdifficulty(const UniValue& params, bool fHelp, const CPubKey& mypk)
 bool NSPV_spentinmempool(uint256 &spenttxid,int32_t &spentvini,uint256 txid,int32_t vout);
 bool NSPV_inmempool(uint256 txid);
 
-bool myIsutxo_spentinmempool(uint256 &spenttxid,int32_t &spentvini,uint256 txid,int32_t vout)
+bool myIsutxo_spentinmempool(uint256& spenttxid, int32_t& spentvini, const uint256& txid, int32_t vout)
 {
-    int32_t vini = 0;
-    if ( KOMODO_NSPV_SUPERLITE )
-        return(NSPV_spentinmempool(spenttxid,spentvini,txid,vout));
-    BOOST_FOREACH(const CTxMemPoolEntry &e,mempool.mapTx)
+    if (KOMODO_NSPV_SUPERLITE)
+        return NSPV_spentinmempool(spenttxid, spentvini, txid, vout);
+
+    LOCK(mempool.cs); // TODO: test with and without (crash)
+    for (const auto& entry : mempool.mapTx)
     {
-        const CTransaction &tx = e.GetTx();
-        const uint256 &hash = tx.GetHash();
-        BOOST_FOREACH(const CTxIn &txin,tx.vin)
+        const CTransaction& tx = entry.GetTx();
+        const uint256& hash = tx.GetHash();
+        int32_t vini = 0;
+
+        for (const auto& txin : tx.vin)
         {
-            //LogPrintf("%s/v%d ",uint256_str(str,txin.prevout.hash),txin.prevout.n);
-            if ( txin.prevout.n == vout && txin.prevout.hash == txid )
+            if (txin.prevout.n == vout && txin.prevout.hash == txid)
             {
                 spenttxid = hash;
                 spentvini = vini;
-                return(true);
+                return true;
             }
-            vini++;
+            ++vini;
         }
-        //LogPrintf("are vins for %s\n",uint256_str(str,hash));
     }
-    return(false);
+    return false;
 }
 
 bool mytxid_inmempool(uint256 txid)
