@@ -40,6 +40,7 @@ src/config/bitcoin-config.h
 src/config/bitcoin-config.h.in
 src/config/stamp-h1
 share/setup.nsi
+src/cryptoconditions/src/cryptoconditions-config.h.in
 
 cache/
 venv-mnf/
@@ -48,7 +49,7 @@ venv-mnf/
 .dirstamp
 .libs
 .*.swp
-*.*~*
+*~
 *.bak
 *.rej
 *.orig
@@ -72,8 +73,12 @@ venv-mnf/
 *.lo
 *.la
 
-# Compilation
+# Compilation and Qt preprocessor part
+*.qm
 Makefile
+src/qt/komodo-qt
+Komodo-Qt.app
+background.tiff*
 
 # Unit-tests
 Makefile.test
@@ -131,4 +136,6 @@ src/qt/komodo-qt
 
 # chain files for iguana
 src/qt/*_7776
-
+src/*_7776
+*_7776
+releases/
