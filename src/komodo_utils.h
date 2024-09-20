@@ -16,6 +16,7 @@
 #define __KOMODO_UTIL_H__
 
 #include "komodo_defs.h"
+#include "komodo_hardfork.h"
 #include "key_io.h"
 #include "cc/CCinclude.h"
 #include <string.h>

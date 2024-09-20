@@ -504,6 +504,7 @@ libbitcoin_common_a_SOURCES = \
   key.cpp \
   key_io.cpp \
   keystore.cpp \
+  komodo_hardfork.cpp \
   netbase.cpp \
   metrics.cpp \
   primitives/block.cpp \
