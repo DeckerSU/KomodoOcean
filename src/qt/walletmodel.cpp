@@ -68,41 +68,31 @@ extern char ASSETCHAINS_SYMBOL[KOMODO_ASSETCHAIN_MAXLEN];
 #define CTXIN_SPEND_DUST_SIZE   148
 #define CTXOUT_REGULAR_SIZE     34
 
-/* Check MCL balances asynchronously to prevent hanging the UI thread. */
-class BalanceWorker : public QObject
+BalanceWorker::BalanceWorker(WalletModel* model)
+    : model_(model), lastBalanceCheckTime_(0)
 {
-    Q_OBJECT
+}
 
-public:
-    explicit BalanceWorker(WalletModel* model) : model_(model) {}
+void BalanceWorker::process()
+{
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+    qint64 lastCheckTime = lastBalanceCheckTime_.loadAcquire();
 
-public Q_SLOTS:
-    void process()
+    if (currentTime - lastCheckTime < 60 * 1000) // 60 seconds has not yet passed
     {
-        QMutexLocker locker(&mutex_);
-        qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
-        if (currentTime - lastBalanceCheckTime_ < 60 * 1000) // 60 seconds has not yet passed
-        {
-            // Q_EMIT balanceCalculated(lastActivatedBalance_, lastLCLBalance_);
-            return;
-        }
-
-        lastActivatedBalance_ = model_->getActivatedBalance();
-        lastLCLBalance_ = model_->getLCLBalance();
-        lastBalanceCheckTime_ = currentTime;
-        Q_EMIT balanceCalculated(lastActivatedBalance_, lastLCLBalance_);
+        Q_EMIT balanceCalculated(lastActivatedBalance_.loadAcquire(), lastLCLBalance_.loadAcquire());
+        return;
     }
 
-Q_SIGNALS:
-    void balanceCalculated(CAmount newActivatedBalance, CAmount newLCLBalance);
+    CAmount newActivatedBalance = model_->getActivatedBalance();
+    CAmount newLCLBalance = model_->getLCLBalance();
 
-private:
-    WalletModel* model_;
-    QMutex mutex_;
-    CAmount lastActivatedBalance_{};
-    CAmount lastLCLBalance_{};
-    qint64 lastBalanceCheckTime_;
-};
+    lastActivatedBalance_.storeRelease(newActivatedBalance);
+    lastLCLBalance_.storeRelease(newLCLBalance);
+    lastBalanceCheckTime_.storeRelease(currentTime);
+
+    Q_EMIT balanceCalculated(newActivatedBalance, newLCLBalance);
+}
 
 #include "walletmodel.moc"
 
@@ -113,8 +103,9 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     cachedBalance(0), cachedUnconfirmedBalance(0), cachedImmatureBalance(0),
     cachedPrivateBalance(0), cachedInterestBalance(0),
     cachedEncryptionStatus(Unencrypted),
-    cachedNumBlocks(0)
+    cachedNumBlocks(0), worker_(nullptr)
 {
+    threadPool_.setMaxThreadCount(1);  // Ensure single-threaded execution
     fHaveWatchOnly = wallet->HaveWatchOnly();
     fForceCheckBalanceChanged = false;
 
@@ -133,6 +124,7 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
 
 WalletModel::~WalletModel()
 {
+    delete worker_;
     unsubscribeFromCoreSignals();
 }
 
@@ -263,27 +255,25 @@ CAmount WalletModel::getLCLBalance() const
 
 void WalletModel::checkMarmaraBalanceChanged()
 {
-    // called from pollBalanceChanged, which called when pollTimer acts (every MODEL_UPDATE_DELAY = 250 sec.)
-    // TODO: we should force checkMarmaraBalanceChanged on every block
+    if (!worker_) {
+        worker_ = new BalanceWorker(this);
+        connect(worker_, &BalanceWorker::balanceCalculated, this, &WalletModel::marmaraBalanceChanged);
+    }
 
-    /*
-            // old code that causes the UI to freeze
-            CAmount newActivatedBalance = getActivatedBalance();
-            CAmount newLCLBalance = getLCLBalance();
-            Q_EMIT marmaraBalanceChanged(newActivatedBalance, newLCLBalance);
-    */
+    class BalanceTask : public QRunnable
+    {
+    public:
+        BalanceTask(BalanceWorker* worker) : worker_(worker) {}
 
-    QThread* thread = new QThread;
-    BalanceWorker* worker = new BalanceWorker(this);
-    worker->moveToThread(thread);
+        void run() override {
+            worker_->process();
+        }
 
-    connect(thread, &QThread::started, worker, &BalanceWorker::process);
-    connect(worker, &BalanceWorker::balanceCalculated, this, &WalletModel::marmaraBalanceChanged);
-    connect(worker, &BalanceWorker::balanceCalculated, thread, &QThread::quit);
-    connect(worker, &BalanceWorker::balanceCalculated, worker, &BalanceWorker::deleteLater);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    private:
+        BalanceWorker* worker_;
+    };
 
-    thread->start();
+    threadPool_.start(new BalanceTask(worker_));
 }
 
 void WalletModel::checkBalanceChanged()

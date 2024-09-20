@@ -21,6 +21,10 @@
 #include <vector>
 
 #include <QObject>
+#include <QThreadPool>
+#include <QRunnable>
+#include <QDateTime>
+#include <QAtomicInteger>
 
 class AddressTableModel;
 class ZAddressTableModel;
@@ -112,6 +116,27 @@ public:
             authenticatedMerchant = QString::fromStdString(sAuthenticatedMerchant);
         }
     }
+};
+
+class WalletModel;
+class BalanceWorker : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit BalanceWorker(WalletModel* model);
+
+public Q_SLOTS:
+    void process();
+
+Q_SIGNALS:
+    void balanceCalculated(CAmount newActivatedBalance, CAmount newLCLBalance);
+
+private:
+    WalletModel* model_;
+    QAtomicInt lastActivatedBalance_;
+    QAtomicInt lastLCLBalance_;
+    QAtomicInteger<qint64> lastBalanceCheckTime_;
 };
 
 /** Interface to Komodo wallet from Qt view code. */
@@ -290,6 +315,9 @@ private:
     void unsubscribeFromCoreSignals();
     void checkBalanceChanged();
     void checkMarmaraBalanceChanged();
+
+    QThreadPool threadPool_;
+    BalanceWorker* worker_;
 
 Q_SIGNALS:
     // Signal that balance in wallet changed
