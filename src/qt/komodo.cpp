@@ -646,6 +646,11 @@ int main(int argc, char *argv[])
     Q_INIT_RESOURCE(komodo);
     Q_INIT_RESOURCE(komodo_locale);
 
+    #if defined(Q_OS_LINUX) && (QT_VERSION <= 0x050908)
+        // Set QT_AUTO_SCREEN_SCALE_FACTOR=1 for Linux and Qt <= 5.9.8, https://github.com/DeckerSU/KomodoOcean/wiki/F.A.Q.
+        qputenv("QT_AUTO_SCREEN_SCALE_FACTOR", "1");
+    #endif
+
     KomodoApplication app(argc, argv);
 #if QT_VERSION > 0x050100
     // Generate high-dpi pixmaps
