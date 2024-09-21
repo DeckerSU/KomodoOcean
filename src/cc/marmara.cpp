@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <chrono>
 #include <unordered_map>
+#include <unordered_set>
 #include <functional>
 
 #include "main.h"
@@ -3360,7 +3361,7 @@ static void EnumLockedInLoop(T func, const CPubKey &pk)
     SetCCunspents(markerOutputs, markeraddr, true);
 
     // Collect all unique loopaddrs
-    std::set<std::string> uniqueLoopAddrs;
+    std::unordered_set<std::string> uniqueLoopAddrs;
 
     // printSize("markerOutputs", markerOutputs);
     for (const auto& markerOutput : markerOutputs)
