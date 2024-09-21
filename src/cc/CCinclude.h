@@ -372,7 +372,7 @@ int32_t is_hexstr(char *str,int32_t n);
 int64_t CCgettxout(uint256 txid,int32_t vout,int32_t mempoolflag,int32_t lockflag);
 
 /// \cond INTERNAL
-bool myIsutxo_spentinmempool(uint256 &spenttxid,int32_t &spentvini,uint256 txid,int32_t vout);
+bool myIsutxo_spentinmempool(uint256& spenttxid, int32_t& spentvini, const uint256& txid, int32_t vout);
 bool myAddtomempool(CTransaction &tx, CValidationState *pstate = NULL, bool fSkipExpiry = false);
 bool mytxid_inmempool(uint256 txid);
 int32_t myIsutxo_spent(uint256 &spenttxid,uint256 txid,int32_t vout);
