@@ -483,18 +483,16 @@ static void AddCCunspentsInMempool(std::vector<std::pair<CAddressUnspentKey, CAd
 
 void SetCCunspents(std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > &unspentOutputs,char *coinaddr,bool ccflag)
 {
-    int32_t type=0,i,n; char *ptr; std::string addrstr; uint160 hashBytes; std::vector<std::pair<uint160, int> > addresses;
+    int32_t type=0,i,n; char *ptr; uint160 hashBytes; std::vector<std::pair<uint160, int> > addresses;
     if ( KOMODO_NSPV_SUPERLITE )
     {
         NSPV_CCunspents(unspentOutputs,coinaddr,ccflag);
         return;
     }
-    n = (int32_t)strlen(coinaddr);
-    addrstr.resize(n+1);
-    ptr = (char *)addrstr.data();
-    for (i=0; i<=n; i++)
-        ptr[i] = coinaddr[i];
-    CBitcoinAddress address(addrstr);
+
+    const std::string strCoinAddr(coinaddr);
+    CBitcoinAddress address(strCoinAddr);
+
     if ( address.GetIndexKey(hashBytes, type, ccflag) == 0 )
         return;
     addresses.push_back(std::make_pair(hashBytes,type));
