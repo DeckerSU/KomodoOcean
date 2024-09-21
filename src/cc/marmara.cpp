@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <list>
 #include <algorithm>
+#include <chrono>
 
 #include "main.h"
 #include "txdb.h"
@@ -3325,8 +3326,14 @@ static void EnumActivatedCoins(T func, bool onlyLocal)
 // calls a callback allowing to do something with the utxos (add to staking utxo array)
 // TODO: maybe better to use AddMarmaraCCInputs with a callback for unification...
 template <class T>
-static void EnumLockedInLoop(T func, const CPubKey &pk)
+static void EnumLockedInLoopOld(T func, const CPubKey &pk)
 {
+    // Start timing
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // Counter for SetCCunspents calls
+    int setCCunspentsCalls = 0;
+
     char markeraddr[KOMODO_ADDRESS_BUFSIZE];
     std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue> > markerOutputs;
 
@@ -3336,6 +3343,7 @@ static void EnumLockedInLoop(T func, const CPubKey &pk)
     CPubKey Marmarapk = GetUnspendable(cp, NULL);
 
     GetCCaddress(cp, markeraddr, Marmarapk);
+    setCCunspentsCalls++;
     SetCCunspents(markerOutputs, markeraddr, true);
 
     // enum all createtxids:
@@ -3365,6 +3373,7 @@ static void EnumLockedInLoop(T func, const CPubKey &pk)
 
                         // enum unspents in the loop
                         GetCCaddress1of2(cp, loopaddr, Marmarapk, createtxidPk);
+                        setCCunspentsCalls++;
                         SetCCunspents(loopOutputs, loopaddr, true);
 
                         // enum all locked-in-loop addresses:
@@ -3426,6 +3435,144 @@ static void EnumLockedInLoop(T func, const CPubKey &pk)
                 LOGSTREAMFN("marmara", CCLOG_ERROR, stream << "error getting issuance tx=" << marker_txid.GetHex() << std::endl);
         }
     }
+
+    // Stop timing
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Compute duration in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    // Output execution time and number of SetCCunspents calls to stderr
+    std::cerr << "EnumLockedInLoopOld execution time: " << duration << " ms" << std::endl;
+    std::cerr << "SetCCunspents calls: " << setCCunspentsCalls << std::endl;
+
+}
+
+template <class T>
+static void EnumLockedInLoop(T func, const CPubKey &pk)
+{
+    // Start timing
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // Counter for SetCCunspents calls
+    int setCCunspentsCalls = 0;
+
+    char markeraddr[KOMODO_ADDRESS_BUFSIZE];
+    std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue>> markerOutputs;
+
+    struct CCcontract_info *cp, C;
+    cp = CCinit(&C, EVAL_MARMARA);
+    CPubKey Marmarapk = GetUnspendable(cp, NULL);
+
+    GetCCaddress(cp, markeraddr, Marmarapk);
+
+    // Increment the counter before calling SetCCunspents
+    setCCunspentsCalls++;
+    SetCCunspents(markerOutputs, markeraddr, true);
+
+    // Enumerate all createtxids
+    LOGSTREAMFN("marmara", CCLOG_DEBUG3, stream << "checking markeraddr=" << markeraddr << std::endl);
+    for (const auto& markerOutput : markerOutputs)
+    {
+        CTransaction isssuancetx;
+        uint256 hashBlock;
+        uint256 marker_txid = markerOutput.first.txhash;
+        int32_t marker_nvout = static_cast<int32_t>(markerOutput.first.index);
+        CAmount marker_amount = markerOutput.second.satoshis;
+
+        LOGSTREAMFN("marmara", CCLOG_DEBUG3, stream << "checking tx on markeraddr txid=" << marker_txid.GetHex() << " vout=" << marker_nvout << std::endl);
+        if (marker_nvout == MARMARA_LOOP_MARKER_VOUT && marker_amount == MARMARA_LOOP_MARKER_AMOUNT)
+        {
+            if (myGetTransaction(marker_txid, isssuancetx, hashBlock))
+            {
+                if (!isssuancetx.IsCoinBase() && isssuancetx.vout.size() > 2 && isssuancetx.vout.back().nValue == 0)
+                {
+                    struct SMarmaraCreditLoopOpret loopData;
+                    if (MarmaraDecodeLoopOpret(isssuancetx.vout.back().scriptPubKey, loopData, MARMARA_OPRET_VERSION_ANY) == MARMARA_ISSUE)
+                    {
+                        char loopaddr[KOMODO_ADDRESS_BUFSIZE];
+                        std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue>> loopOutputs;
+                        CPubKey createtxidPk = CCtxidaddr_tweak(NULL, loopData.createtxid);
+
+                        // Enumerate unspents in the loop
+                        GetCCaddress1of2(cp, loopaddr, Marmarapk, createtxidPk);
+
+                        // Increment the counter before calling SetCCunspents
+                        setCCunspentsCalls++;
+                        SetCCunspents(loopOutputs, loopaddr, true);
+
+                        // Enumerate all locked-in-loop addresses
+                        LOGSTREAMFN("marmara", CCLOG_DEBUG3, stream << "checking on loopaddr=" << loopaddr << std::endl);
+                        for (const auto& loopOutput : loopOutputs)
+                        {
+                            CTransaction looptx;
+                            uint256 hashBlock;
+                            CBlockIndex *pindex;
+                            uint256 txid = loopOutput.first.txhash;
+                            int32_t nvout = static_cast<int32_t>(loopOutput.first.index);
+
+                            LOGSTREAMFN("marmara", CCLOG_DEBUG3, stream << "checking tx on loopaddr txid=" << txid.GetHex() << " vout=" << nvout << std::endl);
+
+                            if (myGetTransaction(txid, looptx, hashBlock) && (pindex = komodo_getblockindex(hashBlock)) != nullptr && !myIsutxo_spentinmempool(ignoretxid, ignorevin, txid, nvout))
+                            {
+                                if (!looptx.IsCoinBase() && !looptx.vout.empty())
+                                {
+                                    char utxoaddr[KOMODO_ADDRESS_BUFSIZE] = "";
+                                    Getscriptaddress(utxoaddr, looptx.vout[nvout].scriptPubKey);
+
+                                    if (strcmp(loopaddr, utxoaddr) == 0)
+                                    {
+                                        CScript opret;
+                                        CPubKey pk_in_opret;
+
+                                        CMarmaraLockInLoopOpretChecker lockinloopChecker(CHECK_ONLY_CCOPRET, MARMARA_OPRET_VERSION_DEFAULT);
+                                        if (get_either_opret(&lockinloopChecker, looptx, nvout, opret, pk_in_opret))
+                                        {
+                                            if (!pk.IsValid() || pk == pk_in_opret)
+                                            {
+                                                // Call the callback function
+                                                func(loopaddr, looptx, nvout, pindex);
+                                                LOGSTREAMFN("marmara", CCLOG_DEBUG3, stream << "found my lock-in-loop 1of2 addr txid=" << txid.GetHex() << " vout=" << nvout << std::endl);
+                                            }
+                                            else
+                                            {
+                                                LOGSTREAMFN("marmara", CCLOG_DEBUG2, stream << "skipped lock-in-loop 1of2 addr txid=" << txid.GetHex()
+                                                                                           << " vout=" << nvout << " does not match the pk" << std::endl);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            LOGSTREAMFN("marmara", CCLOG_ERROR, stream << "skipped lock-in-loop 1of2 addr txid=" << txid.GetHex()
+                                                                                      << " vout=" << nvout << " can't decode opret" << std::endl);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        LOGSTREAMFN("marmara", CCLOG_ERROR, stream << "skipped lock-in-loop 1of2 addr txid=" << txid.GetHex()
+                                                                                  << " vout=" << nvout << " utxo addr and address index not matched" << std::endl);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                LOGSTREAMFN("marmara", CCLOG_ERROR, stream << "error getting issuance tx=" << marker_txid.GetHex() << std::endl);
+            }
+        }
+    }
+
+    // Stop timing
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Compute duration in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    // Output execution time and number of SetCCunspents calls to stderr
+    std::cerr << "EnumLockedInLoop execution time: " << duration << " ms" << std::endl;
+    std::cerr << "SetCCunspents calls: " << setCCunspentsCalls << std::endl;
 }
 
 // add marmara special UTXO from activated and lock-in-loop addresses for staking
@@ -3467,15 +3614,30 @@ void MarmaraGetStakingUtxos(std::vector<struct komodo_staking> &array, int32_t *
         usePubkey = pubkey2pk(Mypubkey());
     }
 
+    size_t utxoCountOld = 0;
+    EnumLockedInLoopOld(
+        [&](const char *loopaddr, const CTransaction & tx, int32_t nvout, CBlockIndex *pindex)
+        {
+            komodo_addutxo(array, numkp, maxkp, (uint32_t)pindex->nTime, (uint64_t)tx.vout[nvout].nValue, tx.GetHash(), nvout, (char*)loopaddr, hashbuf, tx.vout[nvout].scriptPubKey);
+            LOGSTREAM("marmara", CCLOG_DEBUG2, stream << logFName << " " << "added utxo for staking locked-in-loop 1of2addr txid=" << tx.GetHash().GetHex() << " vout=" << nvout << std::endl);
+            ++utxoCountOld;
+        },
+        usePubkey
+    );
+
+    size_t utxoCountNew = 0;
     // add all lock-in-loops utxos:
     EnumLockedInLoop(
         [&](const char *loopaddr, const CTransaction & tx, int32_t nvout, CBlockIndex *pindex)
         {
             komodo_addutxo(array, numkp, maxkp, (uint32_t)pindex->nTime, (uint64_t)tx.vout[nvout].nValue, tx.GetHash(), nvout, (char*)loopaddr, hashbuf, tx.vout[nvout].scriptPubKey);
             LOGSTREAM("marmara", CCLOG_DEBUG2, stream << logFName << " " << "added utxo for staking locked-in-loop 1of2addr txid=" << tx.GetHash().GetHex() << " vout=" << nvout << std::endl);
+            ++utxoCountNew;
         },
         usePubkey
     );
+
+    std::cerr << "utxoCountOld = " << utxoCountOld << ", utxoCountNew = " << utxoCountNew << std::endl;
 
     // add all activated utxos:
 
