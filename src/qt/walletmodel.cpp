@@ -225,6 +225,13 @@ CAmount WalletModel::getLCLBalance() const
 
 void BalanceCheckTask::run()
 {
+    char threadNameBuffer[16] = {0};
+    static uint32_t runCount = 0;
+    runCount++;
+    snprintf(threadNameBuffer, sizeof(threadNameBuffer),
+             "MCLBal-%08x", runCount);
+    RenameThread(threadNameBuffer);
+
     // Perform the balance checks
     CAmount newActivatedBalance = walletModel->getActivatedBalance();
     CAmount newLCLBalance = walletModel->getLCLBalance();
