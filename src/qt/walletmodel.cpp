@@ -82,6 +82,8 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
     transactionTableModel = new TransactionTableModel(platformStyle, wallet, this);
     recentRequestsTableModel = new RecentRequestsTableModel(wallet, this);
 
+    // Configure the thread pool to use only one thread
+    threadPool.setMaxThreadCount(1);
     // This timer will be fired repeatedly to update the balance
     pollTimer = new QTimer(this);
     connect(pollTimer, SIGNAL(timeout()), this, SLOT(pollBalanceChanged()));
@@ -92,6 +94,7 @@ WalletModel::WalletModel(const PlatformStyle *platformStyle, CWallet *_wallet, O
 
 WalletModel::~WalletModel()
 {
+    threadPool.waitForDone();
     unsubscribeFromCoreSignals();
 }
 
@@ -220,17 +223,29 @@ CAmount WalletModel::getLCLBalance() const
     return MarmaraGetLCLAmount();
 }
 
+void BalanceCheckTask::run()
+{
+    // Perform the balance checks
+    CAmount newActivatedBalance = walletModel->getActivatedBalance();
+    CAmount newLCLBalance = walletModel->getLCLBalance();
+
+    // Emit the signal with the results
+    Q_EMIT balancesReady(newActivatedBalance, newLCLBalance);
+}
+
 void WalletModel::checkMarmaraBalanceChanged()
 {
-    // called from pollBalanceChanged, which called when pollTimer acts (every MODEL_UPDATE_DELAY = 250 sec.)
-    // TODO: we should force checkMarmaraBalanceChanged on every block
+    // Create a new task
+    BalanceCheckTask* task = new BalanceCheckTask(this);
+    task->setAutoDelete(true); // Automatically delete the task when done
 
-    CAmount newActivatedBalance = getActivatedBalance();
-    CAmount newLCLBalance = getLCLBalance();
+    // Connect the balancesReady signal to the marmaraBalanceChanged signal
+    connect(task, &BalanceCheckTask::balancesReady,
+            this, &WalletModel::marmaraBalanceChanged,
+            Qt::QueuedConnection);
 
-    // use caching?
-
-    Q_EMIT marmaraBalanceChanged(newActivatedBalance, newLCLBalance);
+    // Start the task in the thread pool
+    threadPool.start(task);
 }
 
 void WalletModel::checkBalanceChanged()

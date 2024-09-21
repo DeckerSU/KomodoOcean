@@ -21,6 +21,8 @@
 #include <vector>
 
 #include <QObject>
+#include <QRunnable>
+#include <QThreadPool>
 
 class AddressTableModel;
 class ZAddressTableModel;
@@ -113,6 +115,26 @@ public:
         }
     }
 };
+
+
+// Forward declaration of WalletModel to avoid circular dependency
+class WalletModel;
+
+class BalanceCheckTask : public QObject, public QRunnable
+{
+    Q_OBJECT
+
+public:
+    BalanceCheckTask(WalletModel* model) : walletModel(model) {}
+    void run() override;
+
+Q_SIGNALS:
+    void balancesReady(qint64 newActivatedBalance, qint64 newLCLBalance);
+
+private:
+    WalletModel* walletModel;
+};
+
 
 /** Interface to Komodo wallet from Qt view code. */
 class WalletModel : public QObject
@@ -285,6 +307,7 @@ private:
     int cachedNumBlocks;
 
     QTimer *pollTimer;
+    QThreadPool threadPool;
 
     void subscribeToCoreSignals();
     void unsubscribeFromCoreSignals();
