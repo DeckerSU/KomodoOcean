@@ -18,6 +18,8 @@
 #include <list>
 #include <algorithm>
 #include <chrono>
+#include <unordered_map>
+#include <functional>
 
 #include "main.h"
 #include "txdb.h"
@@ -3321,6 +3323,24 @@ static void EnumActivatedCoins(T func, bool onlyLocal)
     }
 }
 
+template<typename T>
+void printSize(const std::string& name, const T& container) {
+    std::cerr << name << ".size() = " << container.size() << std::endl;
+}
+
+// Specialize std::hash for uint256 to allow std::unordered_map to hash keys of uint256
+namespace std {
+    template <>
+    struct hash<uint256> {
+        std::size_t operator()(const uint256& k) const noexcept {
+            return static_cast<std::size_t>(k.GetCheapHash());
+        }
+    };
+}
+
+// Cache for issuance transactions
+static std::unordered_map<uint256, CTransaction> issuanceTxCache; // TODO: change on LRU cache
+
 // enumerates pk's locked in loop cc vouts
 // pk could be null then all LCL coins enumerated
 // calls a callback allowing to do something with the utxos (add to staking utxo array)
@@ -3328,6 +3348,7 @@ static void EnumActivatedCoins(T func, bool onlyLocal)
 template <class T>
 static void EnumLockedInLoop(T func, const CPubKey &pk)
 {
+    auto start = std::chrono::high_resolution_clock::now();
     char markeraddr[KOMODO_ADDRESS_BUFSIZE];
     std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue>> markerOutputs;
 
@@ -3340,6 +3361,8 @@ static void EnumLockedInLoop(T func, const CPubKey &pk)
 
     // Collect all unique loopaddrs
     std::set<std::string> uniqueLoopAddrs;
+
+    // printSize("markerOutputs", markerOutputs);
     for (const auto& markerOutput : markerOutputs)
     {
         CTransaction issuanceTx;
@@ -3350,25 +3373,43 @@ static void EnumLockedInLoop(T func, const CPubKey &pk)
 
         if (marker_nvout == MARMARA_LOOP_MARKER_VOUT && marker_amount == MARMARA_LOOP_MARKER_AMOUNT)
         {
-            if (myGetTransaction(marker_txid, issuanceTx, hashBlock))
+            // Check cache first
+            auto itCache = issuanceTxCache.find(marker_txid);
+            if (itCache != issuanceTxCache.end())
             {
-                if (!issuanceTx.IsCoinBase() && issuanceTx.vout.size() > 2 && issuanceTx.vout.back().nValue == 0)
+                issuanceTx = itCache->second;
+            }
+            else
+            {
+                if (myGetTransaction(marker_txid, issuanceTx, hashBlock))
                 {
-                    struct SMarmaraCreditLoopOpret loopData;
-                    if (MarmaraDecodeLoopOpret(issuanceTx.vout.back().scriptPubKey, loopData, MARMARA_OPRET_VERSION_ANY) == MARMARA_ISSUE)
-                    {
-                        char loopaddr[KOMODO_ADDRESS_BUFSIZE];
-                        CPubKey createtxidPk = CCtxidaddr_tweak(NULL, loopData.createtxid);
-                        GetCCaddress1of2(cp, loopaddr, Marmarapk, createtxidPk);
-                        uniqueLoopAddrs.insert(loopaddr);
-                    }
+                    issuanceTxCache[marker_txid] = issuanceTx;
+                }
+                else
+                {
+                    continue;  // Skip if transaction cannot be fetched
+                }
+            }
+
+            if (!issuanceTx.IsCoinBase() && issuanceTx.vout.size() > 2 && issuanceTx.vout.back().nValue == 0)
+            {
+                struct SMarmaraCreditLoopOpret loopData;
+                if (MarmaraDecodeLoopOpret(issuanceTx.vout.back().scriptPubKey, loopData, MARMARA_OPRET_VERSION_ANY) == MARMARA_ISSUE)
+                {
+                    char loopaddr[KOMODO_ADDRESS_BUFSIZE];
+                    CPubKey createtxidPk = CCtxidaddr_tweak(NULL, loopData.createtxid);
+                    GetCCaddress1of2(cp, loopaddr, Marmarapk, createtxidPk);
+                    uniqueLoopAddrs.insert(loopaddr);
                 }
             }
         }
     }
 
+    // printSize("issuanceTxCache", issuanceTxCache);
+
     // Batch retrieve unspent outputs for all loopaddrs
     std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue>> allLoopOutputs;
+    // printSize("uniqueLoopAddrs", uniqueLoopAddrs);
     for (const auto& loopaddr : uniqueLoopAddrs)
     {
         std::vector<std::pair<CAddressUnspentKey, CAddressUnspentValue>> loopOutputs;
@@ -3377,6 +3418,7 @@ static void EnumLockedInLoop(T func, const CPubKey &pk)
     }
 
     // Process all unspent outputs
+    // printSize("allLoopOutputs", allLoopOutputs);
     for (const auto& loopOutput : allLoopOutputs)
     {
         CTransaction loopTx;
@@ -3409,6 +3451,10 @@ static void EnumLockedInLoop(T func, const CPubKey &pk)
             }
         }
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cerr << "EnumLockedInLoopOld execution time: " << duration << " ms" << std::endl;
 }
 
 // add marmara special UTXO from activated and lock-in-loop addresses for staking
