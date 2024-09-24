@@ -733,8 +733,8 @@ const CChainParams::CCheckpointData GetACCheckPoints()
                 2777            // * estimated number of transactions per day after checkpoint
                                 //   total number of tx / (checkpoint block height / (24 * 24))
                 };
-    /* GLEEC */
-    const CChainParams::CCheckpointData checkpointDataGLEEC = {
+    /* old GLEEC */
+    const CChainParams::CCheckpointData checkpointDataGLEECOld = {
                 boost::assign::map_list_of
                 (	0,	Params(CBaseChainParams::MAIN).GetConsensus().hashGenesisBlock)
                 (	97090,	uint256S("0x00008075af58a2d0a52ac480b31a74beb6b2f1261ae2984d29b8429ee4d86f9a"))
@@ -941,13 +941,20 @@ const CChainParams::CCheckpointData GetACCheckPoints()
         ("CCL", checkpointDataCCL)
         ("CLC", checkpointDataCLC)
         ("DOC", checkpointDataDOC)
-        ("GLEEC", checkpointDataGLEEC)
         ("ILN", checkpointDataILN)
         ("KOIN", checkpointDataKOIN)
         ("MARTY", checkpointDataMARTY)
         ("NINJA", checkpointDataNINJA)
         ("PIRATE", checkpointDataPIRATE)
         ("SUPERNET", checkpointDataSUPERNET);
+
+    // Check for GLEEC chain with old and new parameters
+    if (chainName.ToString() == "GLEEC") {
+        if (ASSETCHAINS_SUPPLY == 210000000 && ASSETCHAINS_STAKED == 100) { /* old GLEEC */
+            return checkpointDataGLEECOld;
+        }
+        return checkpointDataDefault; // TODO: return new checkpoints, when we will have enough data
+    }
 
     auto it = mapACCheckpointsData.find(chainName.ToString());
     if (it != mapACCheckpointsData.end()) {
