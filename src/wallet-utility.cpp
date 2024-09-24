@@ -13,6 +13,7 @@
 #include "assetchain.h"
 assetchain chainName;
 
+/*
 int64_t MAX_MONEY = 200000000 * 100000000LL;
 uint64_t ASSETCHAINS_SUPPLY;
 uint16_t BITCOIND_RPCPORT = 7771;
@@ -26,6 +27,7 @@ int32_t ASSETCHAINS_SAPLING = 227520;
 bool IS_KOMODO_TESTNODE = false;
 
 unsigned int MAX_BLOCK_SIGOPS = 20000;
+*/
 
 void show_help()
 {
