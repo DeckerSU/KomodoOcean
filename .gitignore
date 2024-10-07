@@ -135,3 +135,4 @@ src/qt/*_7776
 src/*_7776
 *_7776
 releases/
+depends/aarch64-linux-gnu

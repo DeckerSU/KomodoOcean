@@ -8,6 +8,7 @@ $(package)_config_opts=--with-openssl --disable-shared --enable-static --prefix=
 $(package)_config_opts_linux=--without-libidn2 --host=x86_64-unknown-linux-gnu
 $(package)_config_opts_mingw32=--enable-mingw --host=x86_64-w64-mingw32 --disable-ldap
 $(package)_config_opts_darwin=--without-libidn2 --without-zstd
+$(package)_config_opts_aarch64_linux=--host=aarch64-linux-gnu --without-brotli
 $(package)_cflags_darwin=-mmacosx-version-min=$(OSX_MIN_VERSION)
 $(package)_conf_tool=./configure
 
