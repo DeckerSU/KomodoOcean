@@ -707,7 +707,13 @@ int main(int argc, char *argv[])
         }
 
         void komodo_args(char *argv0);
-        komodo_args(argv[0]);
+        try {
+            komodo_args(argv[0]);
+        } catch (const std::exception& e) {
+            QMessageBox::critical(0, QObject::tr(PACKAGE_NAME),
+                                QObject::tr("Error: %1").arg(e.what()));
+            return EXIT_FAILURE;
+        }
         void chainparams_commandline();
         chainparams_commandline();
 
