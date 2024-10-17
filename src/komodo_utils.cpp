@@ -1056,6 +1056,15 @@ void komodo_args(char *argv0)
     uint16_t nonz=0; // keep track of # CCs enabled
     int32_t extralen = 0; 
 
+    // prevent starting old GLEEC chain without datadir specified
+    if (GetArg("-ac_name","") == "GLEEC" && GetArg("-ac_supply",10) == 210000000 && GetArg("-ac_staked",0) == 100) {
+        if (mapArgs.count("-datadir") == 0) {
+            const std::string strOldGLEECStartUpError = "It's mandatory to launch old GLEEC chain with -datadir specified!";
+            std::cerr << strOldGLEECStartUpError << std::endl;
+            throw std::runtime_error(strOldGLEECStartUpError);
+        }
+    }
+
     const std::string ntz_dest_path = GetArg("-notary", "");
     IS_KOMODO_NOTARY = ntz_dest_path == "" ? 0 : 1;
 
@@ -1567,6 +1576,7 @@ void komodo_args(char *argv0)
         else 
             ASSETCHAINS_P2PPORT = tmpport;
 
+        // TODO: if daemon launched with -datadir, but it's not created, the loop below will be endless loop (!)
         char* dirname = nullptr;
         while ( (dirname= (char *)GetDataDir(false).string().c_str()) == 0 || dirname[0] == 0 )
         {
@@ -1724,6 +1734,7 @@ void komodo_args(char *argv0)
             CCENABLE(EVAL_DICE);
             CCENABLE(EVAL_ORACLES);
         }
+
     } 
     else 
         BITCOIND_RPCPORT = GetArg("-rpcport", BaseParams().RPCPort());
