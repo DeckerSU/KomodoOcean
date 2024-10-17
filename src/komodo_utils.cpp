@@ -1056,10 +1056,10 @@ void komodo_args(char *argv0)
     uint16_t nonz=0; // keep track of # CCs enabled
     int32_t extralen = 0; 
 
-    // prevent start old GLEEC chain without datadir specify
+    // prevent starting old GLEEC chain without datadir specified
     if (GetArg("-ac_name","") == "GLEEC" && GetArg("-ac_supply",10) == 210000000 && GetArg("-ac_staked",0) == 100) {
         if (mapArgs.count("-datadir") == 0) {
-            const std::string strOldGLEECStartUpError = "It's mandatory to launch old GLEEC chain with -datadir specify!";
+            const std::string strOldGLEECStartUpError = "It's mandatory to launch old GLEEC chain with -datadir specified!";
             std::cerr << strOldGLEECStartUpError << std::endl;
             throw std::runtime_error(strOldGLEECStartUpError);
         }
