@@ -3933,7 +3933,14 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
                         else
                         {
                             //LogPrintf("use notary pubkey\n");
-                            scriptChange = CScript() << ParseHex(NOTARY_PUBKEY) << OP_CHECKSIG;
+
+                            // If a valid notary pubkey is passed, the change will be sent to the corresponding address
+                            // as a standard P2PKH vout, not P2PK, so Iguana can easily split it, etc.
+                            vchPubKey = CPubKey(ParseHex(NOTARY_PUBKEY));
+                            if (vchPubKey.IsValid()) {
+                                scriptChange = GetScriptForDestination(vchPubKey.GetID());
+                            } else
+                                scriptChange = CScript() << ParseHex(NOTARY_PUBKEY) << OP_CHECKSIG;
                         }
                     }
 
