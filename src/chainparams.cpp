@@ -951,6 +951,9 @@ const CChainParams::CCheckpointData GetACCheckPoints()
     // Check for GLEEC chain with old and new parameters
     if (chainName.ToString() == "GLEEC") {
         if (ASSETCHAINS_SUPPLY == 210000000 && ASSETCHAINS_STAKED == 100) { /* old GLEEC */
+            ClearDatadirCache();
+            chainName = assetchain("GLEEC_OLD");  /* exception to fix following notarizations,
+            we shouldn't do things like that! */
             return checkpointDataGLEECOld;
         }
         return checkpointDataDefault; // TODO: return new checkpoints, when we will have enough data
