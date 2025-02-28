@@ -18,7 +18,7 @@ build_windows=true
 build_macos=true
 
 download_and_check_macos_sdk() {
-    url="https://download.kmd.sh/depends-sources/Xcode-13.2.1-13C100-extracted-SDK-with-libcxx-headers.tar.gz"
+    url="https://download.decker.im/depends-sources/Xcode-13.2.1-13C100-extracted-SDK-with-libcxx-headers.tar.gz"
     output_file="Xcode-13.2.1-13C100-extracted-SDK-with-libcxx-headers.tar.gz"
     expected_checksum="3d200832a74bc7401160043c92f68b11fcedba2d01353b5ab204f9e6a65653d1"
 
