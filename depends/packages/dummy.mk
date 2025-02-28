@@ -4,6 +4,22 @@
 # make -C ${PWD}/depends HOST=$(depends/config.guess) -j$(nproc --all) dummy
 # add V=1 for verbose output
 #
+# Force rebuild ("unconditional" consider all targets as outdated):
+# make -B -C ${PWD}/depends HOST=$(depends/config.guess) V=1 -j$(nproc --all) dummy
+#
+# To build an individual package (useful for debugging), following build targets are available:
+#
+# PKG, PKG_fetched, PKG_extracted
+# PKG_preprocessed, PKG_configured, PKG_built
+# PKG_staged, PKG_postprocessed, PKG_cached
+# PKG_cached_checksum
+#
+# Example:
+# make -B -C ${PWD}/depends HOST=$(depends/config.guess) V=1 dummy_fetched
+#
+# Output all targets and rules:
+# make -C ${PWD}/depends HOST=$(depends/config.guess) V=1 -pRrq
+#
 package=dummy
 $(package)_version=1.0.0
 $(package)_download_path=https://github.com/DeckerSU/dummy-package/archive/refs/tags/
