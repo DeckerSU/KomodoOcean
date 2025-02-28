@@ -283,6 +283,24 @@ UniValue stop(const UniValue& params, bool fHelp, const CPubKey& mypk)
     return buf;
 }
 
+UniValue uptime(const UniValue& params, bool fHelp, const CPubKey& mypk) {
+
+    if (fHelp) {
+        throw runtime_error(
+            "uptime\n"
+            "\n"
+            "Returns the total uptime of the server.\n"
+            "\nResult:\n"
+            "\"n\"     (numeric) The number of seconds that the server has been running\n"
+            "\nExamples\n"
+            + HelpExampleCli("uptime", "")
+            + HelpExampleRpc("uptime", "")
+            );
+    }
+
+    return GetTime() - GetStartupTime();
+}
+
 /**
  * Call Table
  */
@@ -295,6 +313,7 @@ static const CRPCCommand vRPCCommands[] =
     { "control",            "getnotarysendmany",      &getnotarysendmany,      true  },
     { "control",            "geterablockheights",     &geterablockheights,     true  },
     { "control",            "stop",                   &stop,                   true  },
+    { "control",            "uptime",                 &uptime,                 true  },
 
     /* P2P networking */
     { "network",            "getnetworkinfo",         &getnetworkinfo,         true  },
