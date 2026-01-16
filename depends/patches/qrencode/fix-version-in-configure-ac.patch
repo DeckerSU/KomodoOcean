@@ -1,0 +1,12 @@
+diff --git a/configure.ac b/configure.ac
+index c4ef27a..061da51 100644
+--- a/./configure.ac
++++ b/./configure.ac.org
+@@ -13,6 +13,7 @@ AC_SUBST(MICRO_VERSION)
+ AC_DEFINE_UNQUOTED([MAJOR_VERSION], [$MAJOR_VERSION], [Major version number])
+ AC_DEFINE_UNQUOTED([MINOR_VERSION], [$MINOR_VERSION], [Minor version number])
+ AC_DEFINE_UNQUOTED([MICRO_VERSION], [$MICRO_VERSION], [Micro version number])
++AC_DEFINE_UNQUOTED([VERSION], ["$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION"], [Version string])
+
+ AC_CONFIG_SRCDIR([qrencode.c])
+ AC_CONFIG_HEADERS([config.h])
