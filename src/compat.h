@@ -79,6 +79,12 @@ typedef u_int SOCKET;
 #define SOCKET_ERROR        -1
 #endif
 
+#if defined(__linux__) && !defined(USE_POLL)
+// Note: WIN32 poll is broken (WSAPoll); macOS poll has known issues in upstream
+// Bitcoin context. Restricting poll() usage to Linux is the safest default.
+#define USE_POLL 1
+#endif
+
 #ifdef WIN32
 #ifndef S_IRUSR
 #define S_IRUSR             0400
@@ -113,7 +119,12 @@ bool static inline IsSelectableSocket(SOCKET s) {
     (void)s;
     return true;
 #else
+#ifdef USE_POLL
+    (void)s;
+    return true;
+#else
     return (s < FD_SETSIZE);
+#endif
 #endif
 }
 
