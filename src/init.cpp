@@ -1356,6 +1356,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     LogPrintf("Using Sodium version %s\n", sodium_version_string());
     LogPrintf("Using LevelDB version %d.%d\n", leveldb::kMajorVersion, leveldb::kMinorVersion);
     LogPrintf("Using Libevent version %s\n", event_get_version());
+#ifdef USE_POLL
+    LogPrintf("Socket multiplexing: poll (USE_POLL)\n");
+#else
+    LogPrintf("Socket multiplexing: select\n");
+#endif
 
     if (!fLogTimestamps)
         LogPrintf("Startup time: %s\n", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()));
