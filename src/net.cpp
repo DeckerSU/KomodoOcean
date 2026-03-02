@@ -1194,9 +1194,8 @@ void ThreadSocketHandler()
         //
         // Find which sockets have data to receive
         //
-        std::map<SOCKET, short> revents_by_socket;
-
 #ifdef USE_POLL
+        std::map<SOCKET, short> revents_by_socket;
         std::vector<struct pollfd> pollfds;
         BOOST_FOREACH(const ListenSocket& hListenSocket, vhListenSocket) {
             struct pollfd pfd = { (int)hListenSocket.socket, (short)POLLIN, 0 };
@@ -1354,13 +1353,6 @@ void ThreadSocketHandler()
             BOOST_FOREACH(CNode* pnode, vNodesCopy)
                 pnode->AddRef();
         }
-#ifndef USE_POLL
-        BOOST_FOREACH(const ListenSocket& hListenSocket, vhListenSocket)
-            revents_by_socket[hListenSocket.socket] = (FD_ISSET(hListenSocket.socket, &fdsetRecv) ? (short)POLLIN : 0);
-        BOOST_FOREACH(CNode* pnode, vNodesCopy)
-            if (pnode->hSocket != INVALID_SOCKET)
-                revents_by_socket[pnode->hSocket] = (short)((FD_ISSET(pnode->hSocket, &fdsetRecv) || FD_ISSET(pnode->hSocket, &fdsetError) ? POLLIN : 0) | (FD_ISSET(pnode->hSocket, &fdsetSend) ? POLLOUT : 0));
-#endif
         BOOST_FOREACH(CNode* pnode, vNodesCopy)
         {
             boost::this_thread::interruption_point();
