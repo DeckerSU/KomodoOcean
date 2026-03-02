@@ -44,7 +44,7 @@
 
 #ifdef USE_POLL
 #include <poll.h>
-#include <map>
+#include <unordered_map>
 #endif
 
 #include <boost/filesystem.hpp>
@@ -1195,7 +1195,7 @@ void ThreadSocketHandler()
         // Find which sockets have data to receive
         //
 #ifdef USE_POLL
-        std::map<SOCKET, short> revents_by_socket;
+        std::unordered_map<SOCKET, short> revents_by_socket;
         std::vector<struct pollfd> pollfds;
         BOOST_FOREACH(const ListenSocket& hListenSocket, vhListenSocket) {
             struct pollfd pfd = { (int)hListenSocket.socket, (short)POLLIN, 0 };
