@@ -49,6 +49,10 @@
 #include <fcntl.h>
 #endif
 
+#ifdef USE_POLL
+#include <poll.h>
+#endif
+
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <boost/algorithm/string/predicate.hpp> // for startswith() and endswith()
 #include <boost/thread.hpp>
@@ -310,6 +314,15 @@ bool static InterruptibleRecv(uint8_t* data, size_t len, int timeout, SOCKET& hS
                 if (!IsSelectableSocket(hSocket)) {
                     return false;
                 }
+#ifdef USE_POLL
+                struct pollfd pfd = { (int)hSocket, POLLIN, 0 };
+                int waitMs = (int)std::min(endTime - curTime, maxWait);
+                if (waitMs <= 0) waitMs = 1;
+                int nRet = poll(&pfd, 1, waitMs);
+                if (nRet == SOCKET_ERROR) {
+                    return false;
+                }
+#else
                 struct timeval tval = MillisToTimeval(std::min(endTime - curTime, maxWait));
                 fd_set fdset;
                 FD_ZERO(&fdset);
@@ -318,6 +331,7 @@ bool static InterruptibleRecv(uint8_t* data, size_t len, int timeout, SOCKET& hS
                 if (nRet == SOCKET_ERROR) {
                     return false;
                 }
+#endif
             } else {
                 return false;
             }
@@ -513,6 +527,40 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
                 CloseSocket(hSocket);
                 return false;
             }
+#ifdef USE_POLL
+            struct pollfd pfd = { (int)hSocket, POLLOUT, 0 };
+            int nPollRet = poll(&pfd, 1, nTimeout);
+            if (nPollRet == 0)
+            {
+                LogPrint("net", "connection to %s timeout\n", addrConnect.ToString());
+                CloseSocket(hSocket);
+                return false;
+            }
+            if (nPollRet == SOCKET_ERROR)
+            {
+                LogPrintf("poll() for %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
+                CloseSocket(hSocket);
+                return false;
+            }
+            int nRet = 0;
+            socklen_t nRetSize = sizeof(nRet);
+#ifdef _WIN32
+            if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, (char*)(&nRet), &nRetSize) == SOCKET_ERROR)
+#else
+            if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, &nRet, &nRetSize) == SOCKET_ERROR)
+#endif
+            {
+                LogPrintf("getsockopt() for %s failed: %s\n", addrConnect.ToString(), NetworkErrorString(WSAGetLastError()));
+                CloseSocket(hSocket);
+                return false;
+            }
+            if (nRet != 0)
+            {
+                LogPrintf("connect() to %s failed after poll(): %s\n", addrConnect.ToString(), NetworkErrorString(nRet));
+                CloseSocket(hSocket);
+                return false;
+            }
+#else
             struct timeval timeout = MillisToTimeval(nTimeout);
             fd_set fdset;
             FD_ZERO(&fdset);
@@ -547,6 +595,7 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
                 CloseSocket(hSocket);
                 return false;
             }
+#endif
         }
 #ifdef _WIN32
         else if (WSAGetLastError() != WSAEISCONN)
