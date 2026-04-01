@@ -15,4 +15,8 @@ ProofVerifier ProofVerifier::Disabled() {
     return ProofVerifier(false);
 }
 
+bool ProofVerifier::IsStrict() {
+    return perform_verification;
+}
+
 }

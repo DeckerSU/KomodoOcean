@@ -5337,6 +5337,20 @@ bool CheckBlock(int32_t *futureblockp,int32_t height,CBlockIndex *pindex,const C
     if (nSigOps > MAX_BLOCK_SIGOPS)
         return state.DoS(100, error("CheckBlock: out-of-bounds SigOpCount"),
                          REJECT_INVALID, "bad-blk-sigops", true);
+
+    // Note: the ZCash commit "Avoid duplicate CheckBlock checks"
+    // (https://github.com/zcash/zcash/commit/542fcfe69d7ab0e04c8de4945cb6408d3896e61d)
+    // was never applied to Komodo. That commit introduced a CBlock.fChecked in-memory
+    // caching flag which, due to a bug fixed later in
+    // https://github.com/zcash/zcash/commit/db969c63f48f0f9fc518112ed0b7ace1af78b9d0,
+    // caused Sprout JoinSplit proofs to be skipped entirely for new blocks connected to
+    // the chain tip (because fChecked was set even when ProofVerifier was Disabled(), and
+    // the second CheckBlock call in ConnectBlock would then return early without verifying
+    // proofs). Since Komodo never adopted the fChecked caching mechanism, CheckBlock
+    // behaviour here has never depended on fChecked, and the vulnerability that existed
+    // in ZCash never existed in Komodo. Additionally, Sprout transactions in Komodo are
+    // unconditionally rejected after KOMODO_SAPLING_DEADLINE regardless (see the
+    // "bad-txns-sprout-expired" check in CheckTransaction, around line 1597).
     if ( fCheckPOW && komodo_check_deposit(height,block) < 0 )
     {
         //static uint32_t counter;

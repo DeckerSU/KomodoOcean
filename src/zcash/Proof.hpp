@@ -224,6 +224,10 @@ public:
     // such as during reindexing.
     static ProofVerifier Disabled();
 
+    // Returns `true` if this verification context is strictly
+    // verifying all proofs.
+    bool IsStrict();
+
     template <typename VerificationKey,
               typename ProcessedVerificationKey,
               typename PrimaryInput,
