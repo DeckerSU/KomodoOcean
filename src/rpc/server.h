@@ -505,5 +505,6 @@ extern UniValue kvsearch(const UniValue& params, bool fHelp, const CPubKey& mypk
 extern UniValue kvupdate(const UniValue& params, bool fHelp, const CPubKey& mypk);
 
 extern UniValue letsdebug(const UniValue& params, bool fHelp, const CPubKey& mypk);
+extern UniValue getaddressactivity(const UniValue& params, bool fHelp, const CPubKey& mypk);
 
 #endif // BITCOIN_RPCSERVER_H

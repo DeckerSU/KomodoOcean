@@ -123,6 +123,390 @@ UniValue letsdebug(const UniValue& params, bool fHelp, const CPubKey& mypk) {
     return NullUniValue;
 }
 
+#include <fstream>
+#include <unordered_map>
+#include "asyncrpcoperation.h"
+#include "asyncrpcqueue.h"
+#include "utilmoneystr.h"
+#include "key_io.h"
+#include "init.h"
+#include "komodo_hardfork.h"
+
+/**
+ * Per-address activity statistics collected during the chain scan.
+ */
+struct AddressActivityStats {
+    CAmount balance = 0;
+    uint32_t firstTxTime = 0;
+    uint32_t lastTxTime = 0;
+    uint32_t txCount30d = 0;
+    uint32_t txCount90d = 0;
+    uint32_t txCount365d = 0;
+    uint32_t txCountLifetime = 0;
+};
+
+static const char* GetBalanceBucket(CAmount balance)
+{
+    if (balance < 1 * COIN) return "<1";
+    if (balance < 10 * COIN) return "1-10";
+    if (balance < 100 * COIN) return "10-100";
+    if (balance < 1000 * COIN) return "100-1k";
+    if (balance < 10000 * COIN) return "1k-10k";
+    if (balance < 100000 * COIN) return "10k-100k";
+    return "100k+";
+}
+
+class AsyncRPCOperation_getaddressactivity : public AsyncRPCOperation {
+public:
+    AsyncRPCOperation_getaddressactivity(CAmount minBalance);
+    virtual ~AsyncRPCOperation_getaddressactivity();
+
+    // We don't want to be copied or moved around
+    AsyncRPCOperation_getaddressactivity(AsyncRPCOperation_getaddressactivity const&) = delete;             // Copy construct
+    AsyncRPCOperation_getaddressactivity(AsyncRPCOperation_getaddressactivity&&) = delete;                  // Move construct
+    AsyncRPCOperation_getaddressactivity& operator=(AsyncRPCOperation_getaddressactivity const&) = delete;  // Copy assign
+    AsyncRPCOperation_getaddressactivity& operator=(AsyncRPCOperation_getaddressactivity &&) = delete;      // Move assign
+
+    virtual void main();
+    virtual UniValue getStatus() const;
+
+private:
+    CAmount minBalance_;
+    int32_t begin_height;
+    int32_t end_height;
+    std::atomic<int32_t> currentBlock_;
+    std::atomic<int64_t> addressesSeen_;
+    bool main_impl();
+};
+
+AsyncRPCOperation_getaddressactivity::AsyncRPCOperation_getaddressactivity(CAmount minBalance) :
+    minBalance_(minBalance), begin_height(1), end_height(0), currentBlock_(0), addressesSeen_(0)
+{
+    LOCK(cs_main);
+    end_height = chainActive.Height();
+}
+
+AsyncRPCOperation_getaddressactivity::~AsyncRPCOperation_getaddressactivity() {
+}
+
+/**
+ * Override getStatus() to append the operation's progress to the default status object.
+ */
+UniValue AsyncRPCOperation_getaddressactivity::getStatus() const
+{
+    UniValue v = AsyncRPCOperation::getStatus();
+    UniValue obj = v.get_obj();
+    obj.push_back(Pair("currentblock", currentBlock_.load()));
+    obj.push_back(Pair("begin_height", begin_height));
+    obj.push_back(Pair("end_height", end_height));
+    obj.push_back(Pair("addresses_seen", addressesSeen_.load()));
+    return obj;
+}
+
+void AsyncRPCOperation_getaddressactivity::main() {
+    if (isCancelled())
+        return;
+
+    set_state(OperationStatus::EXECUTING);
+    start_execution_clock();
+    bool success = false;
+
+    try {
+        success = main_impl();
+    } catch (const UniValue& objError) {
+        int code = find_value(objError, "code").get_int();
+        std::string message = find_value(objError, "message").get_str();
+        set_error_code(code);
+        set_error_message(message);
+    } catch (const runtime_error& e) {
+        set_error_code(-1);
+        set_error_message("runtime error: " + string(e.what()));
+    } catch (const logic_error& e) {
+        set_error_code(-1);
+        set_error_message("logic error: " + string(e.what()));
+    } catch (const exception& e) {
+        set_error_code(-1);
+        set_error_message("general exception: " + string(e.what()));
+    } catch (...) {
+        set_error_code(-2);
+        set_error_message("unknown error");
+    }
+
+    stop_execution_clock();
+
+    if (success) {
+        set_state(OperationStatus::SUCCESS);
+    } else {
+        set_state(OperationStatus::FAILED);
+    }
+}
+
+bool AsyncRPCOperation_getaddressactivity::main_impl() {
+
+    UniValue result(UniValue::VOBJ);
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // Collect block index pointers for the scan range (forward order).
+    // Links via pprev are immutable, so we only need cs_main to grab the tip.
+    std::vector<CBlockIndex*> vBlocks;
+    {
+        LOCK(cs_main);
+        end_height = std::min(end_height, chainActive.Height());
+        CBlockIndex* pindex = chainActive[end_height];
+        vBlocks.reserve(end_height);
+        while (pindex != nullptr && pindex->nHeight >= begin_height) {
+            vBlocks.push_back(pindex);
+            pindex = pindex->pprev;
+        }
+    }
+    std::reverse(vBlocks.begin(), vBlocks.end());
+    if (vBlocks.empty())
+        throw runtime_error("no blocks to scan");
+
+    // Time windows are counted back from the time of the last scanned block,
+    // so results are reproducible on any chain snapshot.
+    const int64_t tipTime = vBlocks.back()->GetBlockTime();
+    const int64_t cutoff30d = tipTime - 30 * 86400;
+    const int64_t cutoff90d = tipTime - 90 * 86400;
+    const int64_t cutoff365d = tipTime - 365 * 86400;
+
+    // Known address labels: for now we can only identify notary addresses
+    // (pubkeys for all seasons are available in the daemon) and the
+    // crypto777 address used in notarisation transactions ("technical").
+    std::unordered_map<std::string, const char*> mapLabels;
+    for (int season = 0; season < NUM_KMD_SEASONS; season++) {
+        for (int i = 0; i < NUM_KMD_NOTARIES; i++) {
+            CPubKey pubkey(ParseHex(notaries_elected[season][i][1]));
+            if (pubkey.IsValid())
+                mapLabels[EncodeDestination(CTxDestination(pubkey.GetID()))] = "notary";
+        }
+    }
+    {
+        CPubKey pubkey777(ParseHex(CRYPTO777_PUBSECPSTR));
+        if (pubkey777.IsValid())
+            mapLabels[EncodeDestination(CTxDestination(pubkey777.GetID()))] = "technical";
+    }
+
+    // Address string -> compact id, plus per-address stats. Interning the
+    // addresses keeps the per-utxo entries small.
+    std::unordered_map<std::string, uint32_t> mapAddrIds;
+    std::vector<std::string> vAddrs;
+    std::vector<AddressActivityStats> vStats;
+
+    // In-flight unspent outputs: outpoint -> (address id, amount).
+    // Spent entries are erased, so the map tracks the UTXO set as of the
+    // currently scanned height.
+    struct OutPointHasher {
+        size_t operator()(const COutPoint& outpoint) const {
+            return (size_t)(outpoint.hash.GetCheapHash() ^ (uint64_t)outpoint.n);
+        }
+    };
+    std::unordered_map<COutPoint, std::pair<uint32_t, CAmount>, OutPointHasher> mapUtxo;
+
+    int64_t blocksProcessed = 0;
+    int64_t txesProcessed = 0;
+    int64_t unattributedOutputs = 0; // vouts where destination couldn't be extracted (bare multisig, CC, etc.)
+
+    CBlock block;
+    std::vector<uint32_t> vTouched; // address ids touched by the current tx
+
+    for (CBlockIndex* pindexWalk : vBlocks) {
+
+        if (isCancelled())
+            throw runtime_error("operation was cancelled");
+        if (ShutdownRequested())
+            throw runtime_error("shutdown requested, scan aborted");
+
+        currentBlock_ = pindexWalk->nHeight;
+
+        if (!ReadBlockFromDisk(block, pindexWalk, false))
+            throw runtime_error(strprintf("can't read block at height %d from disk", pindexWalk->nHeight));
+
+        const uint32_t blockTime = pindexWalk->nTime;
+
+        BOOST_FOREACH(const CTransaction &tx, block.vtx) {
+
+            vTouched.clear();
+
+            // Inputs: subtract previously seen outputs from sender balances.
+            if (!tx.IsCoinBase()) {
+                BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+                    auto it = mapUtxo.find(txin.prevout);
+                    if (it != mapUtxo.end()) {
+                        const uint32_t id = it->second.first;
+                        vStats[id].balance -= it->second.second;
+                        vTouched.push_back(id);
+                        mapUtxo.erase(it);
+                    }
+                }
+            }
+
+            // Outputs: credit receiver balances and remember the outpoints.
+            const uint256 txhash = tx.GetHash();
+            for (uint32_t n = 0; n < tx.vout.size(); n++) {
+                const CTxOut& txout = tx.vout[n];
+                if (txout.scriptPubKey.IsOpReturn())
+                    continue;
+                CTxDestination dest;
+                if (!ExtractDestination(txout.scriptPubKey, dest)) {
+                    unattributedOutputs++;
+                    continue;
+                }
+                const std::string address = EncodeDestination(dest);
+                uint32_t id;
+                auto it = mapAddrIds.find(address);
+                if (it == mapAddrIds.end()) {
+                    id = (uint32_t)vStats.size();
+                    mapAddrIds.emplace(address, id);
+                    vAddrs.push_back(address);
+                    vStats.emplace_back();
+                } else {
+                    id = it->second;
+                }
+                vStats[id].balance += txout.nValue;
+                mapUtxo.emplace(COutPoint(txhash, n), std::make_pair(id, txout.nValue));
+                vTouched.push_back(id);
+            }
+
+            // Count the transaction once per participating address.
+            std::sort(vTouched.begin(), vTouched.end());
+            vTouched.erase(std::unique(vTouched.begin(), vTouched.end()), vTouched.end());
+            for (const uint32_t id : vTouched) {
+                AddressActivityStats& stats = vStats[id];
+                if (stats.txCountLifetime == 0)
+                    stats.firstTxTime = blockTime;
+                stats.lastTxTime = blockTime;
+                stats.txCountLifetime++;
+                if (blockTime >= cutoff365d) {
+                    stats.txCount365d++;
+                    if (blockTime >= cutoff90d) {
+                        stats.txCount90d++;
+                        if (blockTime >= cutoff30d)
+                            stats.txCount30d++;
+                    }
+                }
+            }
+
+            txesProcessed++;
+        }
+
+        blocksProcessed++;
+        addressesSeen_ = (int64_t)vStats.size();
+    }
+
+    // Export per-address stats to a CSV file in the data directory; the
+    // operation result carries only a summary (the full table can contain
+    // millions of rows).
+    boost::filesystem::path csvPath = GetDataDir() / strprintf("addressactivity-%d.csv", end_height);
+    std::ofstream csv(csvPath.string().c_str(), std::ios_base::out | std::ios_base::trunc);
+    if (!csv.is_open())
+        throw runtime_error("can't open " + csvPath.string() + " for writing");
+
+    csv << "address,balance,balance_bucket,first_tx_date,last_tx_date,"
+           "tx_count_30d,tx_count_90d,tx_count_365d,tx_count_lifetime,label\n";
+
+    int64_t addressesWritten = 0;
+    std::map<std::string, int64_t> bucketCounts;
+    std::map<std::string, int64_t> labelCounts;
+
+    for (size_t id = 0; id < vStats.size(); id++) {
+        const AddressActivityStats& stats = vStats[id];
+        if (stats.balance < minBalance_)
+            continue;
+
+        const char* bucket = GetBalanceBucket(stats.balance);
+        const char* label = "unknown";
+        auto it = mapLabels.find(vAddrs[id]);
+        if (it != mapLabels.end())
+            label = it->second;
+
+        csv << vAddrs[id] << ','
+            << FormatMoney(stats.balance) << ','
+            << bucket << ','
+            << DateTimeStrFormat("%Y-%m-%d", stats.firstTxTime) << ','
+            << DateTimeStrFormat("%Y-%m-%d", stats.lastTxTime) << ','
+            << stats.txCount30d << ','
+            << stats.txCount90d << ','
+            << stats.txCount365d << ','
+            << stats.txCountLifetime << ','
+            << label << '\n';
+
+        bucketCounts[bucket]++;
+        labelCounts[label]++;
+        addressesWritten++;
+    }
+    csv.close();
+
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = finish - start;
+
+    result.push_back(Pair("elapsed_ms", elapsed.count()));
+    result.push_back(Pair("begin_height", begin_height));
+    result.push_back(Pair("end_height", end_height));
+    result.push_back(Pair("tip_time", tipTime));
+    result.push_back(Pair("blocks_processed", blocksProcessed));
+    result.push_back(Pair("txes_processed", txesProcessed));
+    result.push_back(Pair("unattributed_outputs", unattributedOutputs));
+    result.push_back(Pair("addresses_total", (int64_t)vStats.size()));
+    result.push_back(Pair("min_balance", FormatMoney(minBalance_)));
+    result.push_back(Pair("addresses_written", addressesWritten));
+    result.push_back(Pair("file", csvPath.string()));
+
+    UniValue bucketsObj(UniValue::VOBJ);
+    BOOST_FOREACH(const PAIRTYPE(std::string, int64_t)& item, bucketCounts) {
+        bucketsObj.push_back(Pair(item.first, item.second));
+    }
+    result.push_back(Pair("balance_buckets", bucketsObj));
+
+    UniValue labelsObj(UniValue::VOBJ);
+    BOOST_FOREACH(const PAIRTYPE(std::string, int64_t)& item, labelCounts) {
+        labelsObj.push_back(Pair(item.first, item.second));
+    }
+    result.push_back(Pair("labels", labelsObj));
+
+    set_result(result);
+    return true;
+}
+
+UniValue getaddressactivity(const UniValue& params, bool fHelp, const CPubKey& mypk)
+{
+    if (fHelp || params.size() > 1)
+        throw runtime_error(
+            "getaddressactivity ( min_balance )\n"
+            "\nStarts an asynchronous full chain scan which collects per-address activity statistics:\n"
+            "current balance, balance bucket, first/last transaction dates, transaction counts in the\n"
+            "last 30/90/365 days, lifetime transaction count and a known label (notary/technical/unknown).\n"
+            "Time windows are counted back from the time of the chain tip at the moment the scan starts.\n"
+            "The full per-address table is written as CSV to the data directory (the path is included in\n"
+            "the operation result); the operation result itself contains only a summary.\n"
+            "\nNote: this RPC scans every block and transaction in the chain and keeps an in-memory UTXO\n"
+            "map, so it takes a long time and uses a significant amount of memory.\n"
+            "\nUse z_getoperationstatus to track progress and z_getoperationresult to retrieve the summary.\n"
+            "\nArguments:\n"
+            "1. min_balance    (numeric, optional, default=0) only export addresses with current balance >= min_balance (in " + CURRENCY_UNIT + ")\n"
+            "\nResult:\n"
+            "\"operationid\"    (string) the operation id of the queued scan\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getaddressactivity", "")
+            + HelpExampleCli("getaddressactivity", "1.0")
+            + HelpExampleRpc("getaddressactivity", "1.0")
+        );
+
+    if (!chainName.isKMD())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "This RPC can be used only in KMD chain itself");
+
+    CAmount minBalance = 0;
+    if (params.size() > 0)
+        minBalance = AmountFromValue(params[0]);
+
+    // Create operation and add to global queue
+    std::shared_ptr<AsyncRPCQueue> q = getAsyncRPCQueue();
+    std::shared_ptr<AsyncRPCOperation> operation(new AsyncRPCOperation_getaddressactivity(minBalance));
+    q->addOperation(operation);
+    AsyncRPCOperationId operationId = operation->getId();
+    return operationId;
+}
+
 static UniValue ValuePoolDesc(
     const boost::optional<std::string> name,
     const boost::optional<CAmount> chainValue,
@@ -1986,6 +2370,7 @@ static const CRPCCommand commands[] =
     { "hidden",             "invalidateblock",        &invalidateblock,        true  },
     { "hidden",             "reconsiderblock",        &reconsiderblock,        true  },
     { "hidden",             "letsdebug",              &letsdebug,              true  },
+    { "blockchain",         "getaddressactivity",     &getaddressactivity,     true  },
 };
 
 void RegisterBlockchainRPCCommands(CRPCTable &tableRPC)

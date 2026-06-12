@@ -177,6 +177,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "calc_MoM", 2},
     { "migrate_completeimporttransaction", 1},
     { "letsdebug", 1 },
+    { "getaddressactivity", 0 },
     { "uptime", 0 }
 };
 
