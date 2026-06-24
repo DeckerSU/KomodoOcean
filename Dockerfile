@@ -47,8 +47,8 @@ LABEL maintainer="DeckerSU <deckersu@protonmail.com>"
 
 SHELL ["/bin/bash", "-c"]
 
-# Latest release komodo v0.9.2-rc2
-ARG KOMODO_COMMITTISH=v0.9.2-rc3
+# Latest release komodo v0.9.2-rc4
+ARG KOMODO_COMMITTISH=v0.9.2-rc4
 ARG IS_RELEASE=false
 # DeckerSU <deckersu@protonmail.com> https://keys.openpgp.org/vks/v1/by-fingerprint/FD9A772C7300F4C894D1A819FE50480862E6451C
 ARG KOMODOD_MAINTAINER_KEYS="FD9A772C7300F4C894D1A819FE50480862E6451C"
