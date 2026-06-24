@@ -658,6 +658,10 @@ int32_t komodo_hasOpRet(int32_t height, uint32_t timestamp)
 
 bool komodo_checkopret(CBlock *pblock, CScript &merkleroot)
 {
+    // guard against a malformed block: the merkleroot opret lives in the last
+    // vout of the last tx, but vtx/vout may be empty before per-tx validation
+    if ( pblock->vtx.empty() || pblock->vtx.back().vout.empty() )
+        return false;
     merkleroot = pblock->vtx.back().vout.back().scriptPubKey;
     return(merkleroot.IsOpReturn() && merkleroot == komodo_makeopret(pblock, false));
 }
@@ -745,6 +749,48 @@ int32_t komodo_is_notarytx(const CTransaction& tx)
         }
     }
     return(0);
+}
+
+// Decode the BIP34 block height encoded in a coinbase transaction's scriptSig.
+// The miner writes the height as the first item of vin[0].scriptSig via
+// `CScript() << nHeight` (see miner.cpp), so we mirror that encoding exactly:
+//   height == 0      -> single OP_0 opcode
+//   height in 1..16  -> single OP_1..OP_16 opcode (no length byte)
+//   height > 16      -> data push holding a little-endian CScriptNum
+// All reads go through the bounds-checked CScript::GetOp(), so a malformed or
+// attacker-supplied scriptSig can never cause an out-of-range access.
+// Returns the decoded height, or -1 if the coinbase carries no valid BIP34 height.
+int32_t komodo_coinbase_height(const CTransaction& coinbaseTx)
+{
+    if ( coinbaseTx.vin.empty() )
+        return -1;
+
+    const CScript& scriptSig = coinbaseTx.vin[0].scriptSig;
+    CScript::const_iterator pc = scriptSig.begin();
+    opcodetype opcode;
+    std::vector<unsigned char> vch;
+
+    // GetOp() refuses truncated/overlong pushes and never reads past the script.
+    if ( !scriptSig.GetOp(pc, opcode, vch) )
+        return -1;
+
+    if ( opcode == OP_0 )
+        return 0;
+    if ( opcode >= OP_1 && opcode <= OP_16 )
+        return CScript::DecodeOP_N(opcode);
+
+    // Must be a data push (not some other opcode) to carry a height.
+    if ( opcode > OP_PUSHDATA4 || vch.empty() )
+        return -1;
+    try {
+        // fRequireMinimal=false (tolerant); nMaxNumSize defaults to 4, so a push
+        // wider than 4 bytes throws and is rejected as malformed.
+        CScriptNum height(vch, false);
+        int32_t h = height.getint();
+        return (h < 0) ? -1 : h;
+    } catch (const scriptnum_error&) {
+        return -1;
+    }
 }
 
 int32_t komodo_block2height(CBlock *block)

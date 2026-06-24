@@ -123,6 +123,8 @@ int32_t komodo_isPoS(CBlock *pblock, int32_t height,CTxDestination *addressout);
 
 int32_t komodo_is_notarytx(const CTransaction& tx);
 
+int32_t komodo_coinbase_height(const CTransaction& coinbaseTx);
+
 int32_t komodo_block2height(CBlock *block);
 
 bool komodo_block2pubkey33(uint8_t *pubkey33,CBlock *block);
