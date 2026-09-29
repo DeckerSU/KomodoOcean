@@ -1,0 +1,15 @@
+#ifndef LIBSECP256K1_CONFIG_H
+#define LIBSECP256K1_CONFIG_H
+#define ENABLE_MODULE_RECOVERY 1
+#cmakedefine HAVE_BUILTIN_EXPECT 1
+#cmakedefine HAVE___INT128 1
+#cmakedefine USE_ASM_X86_64 1
+#define USE_ECMULT_STATIC_PRECOMPUTATION 1
+#cmakedefine USE_FIELD_5X52 1
+#cmakedefine USE_FIELD_10X26 1
+#cmakedefine USE_SCALAR_4X64 1
+#cmakedefine USE_SCALAR_8X32 1
+#define USE_FIELD_INV_BUILTIN 1
+#define USE_SCALAR_INV_BUILTIN 1
+#define USE_NUM_NONE 1
+#endif

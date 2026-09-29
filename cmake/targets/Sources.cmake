@@ -1,0 +1,574 @@
+# Explicit source lists, initially transcribed from the Automake targets.
+# Keep platform and optional additions in the target definitions.
+
+set(libbitcoin_server_a_SOURCES
+  sendalert.cpp
+  addrman.cpp
+  addrdb.cpp
+  alert.cpp
+  asyncrpcoperation.cpp
+  asyncrpcqueue.cpp
+  bloom.cpp
+  cc/eval.cpp
+  cc/import.cpp
+  cc/importgateway.cpp
+  cc/CCassetsCore.cpp
+  cc/CCcustom.cpp
+  cc/CCtx.cpp
+  cc/CCutils.cpp
+  cc/CCtokens.cpp
+  cc/assets.cpp
+  cc/faucet.cpp
+  cc/rewards.cpp
+  cc/dice.cpp
+  cc/lotto.cpp
+  cc/fsm.cpp
+  cc/heir.cpp
+  cc/oracles.cpp
+  cc/payments.cpp
+  cc/gateways.cpp
+  cc/channels.cpp
+  cc/auction.cpp
+  cc/betprotocol.cpp
+  chain.cpp
+  checkpoints.cpp
+  fs.cpp
+  crosschain.cpp
+  deprecation.cpp
+  httprpc.cpp
+  httpserver.cpp
+  init.cpp
+  dbwrapper.cpp
+  main.cpp
+  merkleblock.cpp
+  metrics.cpp
+  miner.cpp
+  net.cpp
+  notaries_staked.cpp
+  noui.cpp
+  notarisationdb.cpp
+  paymentdisclosure.cpp
+  paymentdisclosuredb.cpp
+  policy/fees.cpp
+  pow.cpp
+  rest.cpp
+  rpc/blockchain.cpp
+  rpc/crosschain.cpp
+  rpc/mining.cpp
+  rpc/misc.cpp
+  rpc/net.cpp
+  rpc/rawtransaction.cpp
+  rpc/server.cpp
+  script/serverchecker.cpp
+  script/sigcache.cpp
+  timedata.cpp
+  torcontrol.cpp
+  txdb.cpp
+  txmempool.cpp
+  validationinterface.cpp
+  Gulden/auto_checkpoints.cpp
+  Gulden/auto_checkpoints_activation.cpp
+  cc/cclib.cpp
+)
+
+set(libbitcoin_wallet_a_SOURCES
+  utiltest.cpp
+  zcbenchmarks.cpp
+  wallet/asyncrpcoperation_mergetoaddress.cpp
+  wallet/asyncrpcoperation_sendmany.cpp
+  wallet/asyncrpcoperation_shieldcoinbase.cpp
+  wallet/crypter.cpp
+  wallet/db.cpp
+  paymentdisclosure.cpp
+  paymentdisclosuredb.cpp
+  transaction_builder.cpp
+  wallet/rpcdisclosure.cpp
+  wallet/rpcdump.cpp
+  cc/CCtokens.cpp
+  cc/CCassetsCore.cpp
+  cc/CCassetstx.cpp
+  cc/CCtx.cpp
+  wallet/rpcwallet.cpp
+  wallet/wallet.cpp
+  wallet/wallet_fees.cpp
+  wallet/wallet_ismine.cpp
+  wallet/walletdb.cpp
+  zcash/zip32.cpp
+)
+
+set(crypto_libbitcoin_crypto_a_SOURCES
+  crypto/equihash.cpp
+  crypto/hmac_sha256.cpp
+  crypto/hmac_sha512.cpp
+  crypto/ripemd160.cpp
+  crypto/sha1.cpp
+  crypto/sha256.cpp
+  crypto/sha512.cpp
+)
+
+set(libbitcoin_common_a_SOURCES
+  amount.cpp
+  arith_uint256.cpp
+  base58.cpp
+  bech32.cpp
+  chainparams.cpp
+  coins.cpp
+  compressor.cpp
+  consensus/merkle.cpp
+  consensus/upgrades.cpp
+  core_read.cpp
+  core_write.cpp
+  hash.cpp
+  hex.c
+  importcoin.cpp
+  key.cpp
+  key_io.cpp
+  keystore.cpp
+  komodo_structs.cpp
+  komodo.cpp
+  komodo_bitcoind.cpp
+  komodo_ccdata.cpp
+  komodo_curve25519.cpp
+  komodo_events.cpp
+  komodo_gateway.cpp
+  komodo_globals.cpp
+  komodo_hardfork.cpp
+  komodo_interest.cpp
+  komodo_kv.cpp
+  komodo_notary.cpp
+  komodo_utils.cpp
+  netbase.cpp
+  metrics.cpp
+  primitives/block.cpp
+  primitives/transaction.cpp
+  protocol.cpp
+  pubkey.cpp
+  scheduler.cpp
+  script/cc.cpp
+  script/interpreter.cpp
+  script/script.cpp
+  script/script_ext.cpp
+  script/script_error.cpp
+  script/sign.cpp
+  script/standard.cpp
+  transaction_builder.cpp
+  cc/CCtokenutils.cpp
+  cc/CCutilbits.cpp
+)
+
+set(libbitcoin_util_a_SOURCES
+  support/pagelocker.cpp
+  chainparamsbase.cpp
+  clientversion.cpp
+  compat/glibc_sanity.cpp
+  compat/glibcxx_sanity.cpp
+  compat/strnlen.cpp
+  random.cpp
+  rpc/protocol.cpp
+  support/cleanse.cpp
+  sync.cpp
+  uint256.cpp
+  util.cpp
+  utilmoneystr.cpp
+  utilstrencodings.cpp
+  utiltime.cpp
+  util/asmap.cpp
+)
+
+set(libbitcoin_cli_a_SOURCES
+  rpc/client.cpp
+)
+
+set(libzcash_a_SOURCES
+  zcash/IncrementalMerkleTree.cpp
+  zcash/NoteEncryption.cpp
+  zcash/Address.cpp
+  zcash/JoinSplit.cpp
+  zcash/Proof.cpp
+  zcash/Note.cpp
+  zcash/prf.cpp
+  zcash/util.cpp
+  zcash/zip32.cpp
+)
+
+set(libbitcoin_zmq_a_SOURCES
+  zmq/zmqabstractnotifier.cpp
+  zmq/zmqnotificationinterface.cpp
+  zmq/zmqpublishnotifier.cpp
+)
+
+set(libzcashconsensus_la_SOURCES
+  crypto/equihash.cpp
+  crypto/hmac_sha512.cpp
+  crypto/ripemd160.cpp
+  crypto/sha1.cpp
+  crypto/sha256.cpp
+  crypto/sha512.cpp
+  hash.cpp
+  primitives/transaction.cpp
+  pubkey.cpp
+  script/zcashconsensus.cpp
+  script/interpreter.cpp
+  script/script.cpp
+  uint256.cpp
+  utilstrencodings.cpp
+)
+
+set(leveldb_libleveldb_a_SOURCES
+  leveldb/db/builder.cc
+  leveldb/db/c.cc
+  leveldb/db/dbformat.cc
+  leveldb/db/db_impl.cc
+  leveldb/db/db_iter.cc
+  leveldb/db/dumpfile.cc
+  leveldb/db/filename.cc
+  leveldb/db/log_reader.cc
+  leveldb/db/log_writer.cc
+  leveldb/db/memtable.cc
+  leveldb/db/repair.cc
+  leveldb/db/table_cache.cc
+  leveldb/db/version_edit.cc
+  leveldb/db/version_set.cc
+  leveldb/db/write_batch.cc
+  leveldb/table/block_builder.cc
+  leveldb/table/block.cc
+  leveldb/table/filter_block.cc
+  leveldb/table/format.cc
+  leveldb/table/iterator.cc
+  leveldb/table/merger.cc
+  leveldb/table/table_builder.cc
+  leveldb/table/table.cc
+  leveldb/table/two_level_iterator.cc
+  leveldb/util/arena.cc
+  leveldb/util/bloom.cc
+  leveldb/util/cache.cc
+  leveldb/util/coding.cc
+  leveldb/util/comparator.cc
+  leveldb/util/crc32c.cc
+  leveldb/util/env.cc
+  leveldb/util/env_posix.cc
+  leveldb/util/filter_policy.cc
+  leveldb/util/hash.cc
+  leveldb/util/histogram.cc
+  leveldb/util/logging.cc
+  leveldb/util/options.cc
+  leveldb/util/status.cc
+  leveldb/port/port_posix.cc
+)
+
+set(komodo_test_SOURCES
+  test-komodo/main.cpp
+  test-komodo/testutils.cpp
+  test-komodo/test_cryptoconditions.cpp
+  test-komodo/test_coinimport.cpp
+  test-komodo/test_eval_bet.cpp
+  test-komodo/test_eval_notarisation.cpp
+  test-komodo/test_parse_notarisation.cpp
+  test-komodo/test_buffered_file.cpp
+  test-komodo/test_sha256_crypto.cpp
+  test-komodo/test_script_standard_tests.cpp
+  test-komodo/test_multisig_tests.cpp
+  test-komodo/test_merkle_tests.cpp
+  test-komodo/test_addrman.cpp
+  test-komodo/test_netbase_tests.cpp
+  test-komodo/test_events.cpp
+  test-komodo/test_hex.cpp
+  test-komodo/test_haraka_removal.cpp
+  test-komodo/test_oldhash_removal.cpp
+  test-komodo/test_kmd_feat.cpp
+  test-komodo/test_legacy_events.cpp
+  test-komodo/test_parse_args.cpp
+  test-komodo/test-gmp-arith.cpp
+  test-komodo/test_equihash.cpp
+  test-komodo/test_equihash_boost.cpp
+  test-komodo/test_equihash_solution.cpp
+  test-komodo/test_coinbase_height.cpp
+)
+
+set(libcryptoconditions_core_la_SOURCES
+  src/cryptoconditions.c
+  src/utils.c
+  src/include/cJSON.c
+  src/include/sha256.c
+  src/include/ed25519/src/keypair.c
+  src/include/ed25519/src/seed.c
+  src/include/ed25519/src/verify.c
+  src/include/ed25519/src/sign.c
+  src/include/ed25519/src/fe.c
+  src/include/ed25519/src/sc.c
+  src/include/ed25519/src/sha512.c
+  src/include/ed25519/src/ge.c
+  src/include/ed25519/src/add_scalar.c
+  src/include/ed25519/src/key_exchange.c
+  src/asn/Condition.c
+  src/asn/SimpleSha256Condition.c
+  src/asn/CompoundSha256Condition.c
+  src/asn/ConditionTypes.c
+  src/asn/Fulfillment.c
+  src/asn/PreimageFulfillment.c
+  src/asn/PrefixFulfillment.c
+  src/asn/ThresholdFulfillment.c
+  src/asn/RsaSha256Fulfillment.c
+  src/asn/Ed25519Sha512Fulfillment.c
+  src/asn/PrefixFingerprintContents.c
+  src/asn/ThresholdFingerprintContents.c
+  src/asn/RsaFingerprintContents.c
+  src/asn/Ed25519FingerprintContents.c
+  src/asn/EvalFulfillment.c
+  src/asn/Secp256k1FingerprintContents.c
+  src/asn/Secp256k1Fulfillment.c
+  src/asn/INTEGER.c
+  src/asn/NativeEnumerated.c
+  src/asn/NativeInteger.c
+  src/asn/asn_SET_OF.c
+  src/asn/constr_CHOICE.c
+  src/asn/constr_SEQUENCE.c
+  src/asn/constr_SET_OF.c
+  src/asn/OCTET_STRING.c
+  src/asn/BIT_STRING.c
+  src/asn/asn_codecs_prim.c
+  src/asn/ber_tlv_length.c
+  src/asn/ber_tlv_tag.c
+  src/asn/ber_decoder.c
+  src/asn/der_encoder.c
+  src/asn/constr_TYPE.c
+  src/asn/constraints.c
+  src/asn/xer_support.c
+  src/asn/xer_decoder.c
+  src/asn/xer_encoder.c
+  src/asn/per_support.c
+  src/asn/per_decoder.c
+  src/asn/per_encoder.c
+  src/asn/per_opentype.c
+)
+
+set(KOMODO_QT_BASE_CPP
+  qt/bantablemodel.cpp
+  qt/komodoaddressvalidator.cpp
+  qt/komodoamountfield.cpp
+  qt/komodooceangui.cpp
+  qt/komodounits.cpp
+  qt/clientmodel.cpp
+  qt/csvmodelwriter.cpp
+  qt/guiutil.cpp
+  qt/intro.cpp
+  qt/modaloverlay.cpp
+  qt/networkstyle.cpp
+  qt/notificator.cpp
+  qt/optionsdialog.cpp
+  qt/optionsmodel.cpp
+  qt/peertablemodel.cpp
+  qt/platformstyle.cpp
+  qt/qvalidatedlineedit.cpp
+  qt/qvaluecombobox.cpp
+  qt/rpcconsole.cpp
+  qt/splashscreen.cpp
+  qt/trafficgraphwidget.cpp
+  qt/utilitydialog.cpp
+)
+
+set(KOMODO_QT_WALLET_CPP
+  qt/addressbookpage.cpp
+  qt/zaddressbookpage.cpp
+  qt/addresstablemodel.cpp
+  qt/zaddresstablemodel.cpp
+  qt/askpassphrasedialog.cpp
+  qt/coincontroldialog.cpp
+  qt/coincontroltreewidget.cpp
+  qt/editaddressdialog.cpp
+  qt/editzaddressdialog.cpp
+  qt/openuridialog.cpp
+  qt/overviewpage.cpp
+  qt/paymentserver.cpp
+  qt/receivecoinsdialog.cpp
+  qt/receiverequestdialog.cpp
+  qt/recentrequeststablemodel.cpp
+  qt/sendcoinsdialog.cpp
+  qt/zsendcoinsdialog.cpp
+  qt/sendcoinsentry.cpp
+  qt/signverifymessagedialog.cpp
+  qt/transactiondesc.cpp
+  qt/transactiondescdialog.cpp
+  qt/transactionfilterproxy.cpp
+  qt/transactionrecord.cpp
+  qt/transactiontablemodel.cpp
+  qt/transactionview.cpp
+  qt/walletframe.cpp
+  qt/walletmodel.cpp
+  qt/walletmodeltransaction.cpp
+  qt/walletmodelztransaction.cpp
+  qt/walletview.cpp
+)
+
+set(QT_MOC_CPP
+  qt/moc_addressbookpage.cpp
+  qt/moc_zaddressbookpage.cpp
+  qt/moc_addresstablemodel.cpp
+  qt/moc_zaddresstablemodel.cpp
+  qt/moc_askpassphrasedialog.cpp
+  qt/moc_bantablemodel.cpp
+  qt/moc_komodoaddressvalidator.cpp
+  qt/moc_komodoamountfield.cpp
+  qt/moc_komodooceangui.cpp
+  qt/moc_komodounits.cpp
+  qt/moc_callback.cpp
+  qt/moc_clientmodel.cpp
+  qt/moc_coincontroldialog.cpp
+  qt/moc_coincontroltreewidget.cpp
+  qt/moc_csvmodelwriter.cpp
+  qt/moc_editaddressdialog.cpp
+  qt/moc_editzaddressdialog.cpp
+  qt/moc_guiutil.cpp
+  qt/moc_intro.cpp
+  qt/moc_macdockiconhandler.cpp
+  qt/moc_macnotificationhandler.cpp
+  qt/moc_modaloverlay.cpp
+  qt/moc_notificator.cpp
+  qt/moc_openuridialog.cpp
+  qt/moc_optionsdialog.cpp
+  qt/moc_optionsmodel.cpp
+  qt/moc_overviewpage.cpp
+  qt/moc_peertablemodel.cpp
+  qt/moc_paymentserver.cpp
+  qt/moc_qvalidatedlineedit.cpp
+  qt/moc_qvaluecombobox.cpp
+  qt/moc_receivecoinsdialog.cpp
+  qt/moc_receiverequestdialog.cpp
+  qt/moc_recentrequeststablemodel.cpp
+  qt/moc_rpcconsole.cpp
+  qt/moc_sendcoinsdialog.cpp
+  qt/moc_zsendcoinsdialog.cpp
+  qt/moc_sendcoinsentry.cpp
+  qt/moc_signverifymessagedialog.cpp
+  qt/moc_splashscreen.cpp
+  qt/moc_trafficgraphwidget.cpp
+  qt/moc_transactiondesc.cpp
+  qt/moc_transactiondescdialog.cpp
+  qt/moc_transactionfilterproxy.cpp
+  qt/moc_transactiontablemodel.cpp
+  qt/moc_transactionview.cpp
+  qt/moc_utilitydialog.cpp
+  qt/moc_walletframe.cpp
+  qt/moc_walletmodel.cpp
+  qt/moc_walletview.cpp
+)
+
+set(QT_MOC
+  qt/komodoapp.moc
+  qt/komodoamountfield.moc
+  qt/intro.moc
+  qt/overviewpage.moc
+  qt/rpcconsole.moc
+)
+
+set(QT_FORMS_UI
+  qt/forms/addressbookpage.ui
+  qt/forms/askpassphrasedialog.ui
+  qt/forms/coincontroldialog.ui
+  qt/forms/editaddressdialog.ui
+  qt/forms/helpmessagedialog.ui
+  qt/forms/intro.ui
+  qt/forms/modaloverlay.ui
+  qt/forms/openuridialog.ui
+  qt/forms/optionsdialog.ui
+  qt/forms/overviewpage.ui
+  qt/forms/receivecoinsdialog.ui
+  qt/forms/receiverequestdialog.ui
+  qt/forms/debugwindow.ui
+  qt/forms/sendcoinsdialog.ui
+  qt/forms/zsendcoinsdialog.ui
+  qt/forms/sendcoinsentry.ui
+  qt/forms/signverifymessagedialog.ui
+  qt/forms/transactiondescdialog.ui
+  qt/forms/zaddressbookpage.ui
+  qt/forms/editzaddressdialog.ui
+)
+
+set(QT_TS
+  qt/locale/komodo_af.ts
+  qt/locale/komodo_af_ZA.ts
+  qt/locale/komodo_ar.ts
+  qt/locale/komodo_be_BY.ts
+  qt/locale/komodo_bg_BG.ts
+  qt/locale/komodo_bg.ts
+  qt/locale/komodo_ca_ES.ts
+  qt/locale/komodo_ca.ts
+  qt/locale/komodo_ca@valencia.ts
+  qt/locale/komodo_cs.ts
+  qt/locale/komodo_cy.ts
+  qt/locale/komodo_da.ts
+  qt/locale/komodo_de.ts
+  qt/locale/komodo_el_GR.ts
+  qt/locale/komodo_el.ts
+  qt/locale/komodo_en_GB.ts
+  qt/locale/komodo_en.ts
+  qt/locale/komodo_eo.ts
+  qt/locale/komodo_es_AR.ts
+  qt/locale/komodo_es_CL.ts
+  qt/locale/komodo_es_CO.ts
+  qt/locale/komodo_es_DO.ts
+  qt/locale/komodo_es_ES.ts
+  qt/locale/komodo_es_MX.ts
+  qt/locale/komodo_es.ts
+  qt/locale/komodo_es_UY.ts
+  qt/locale/komodo_es_VE.ts
+  qt/locale/komodo_et_EE.ts
+  qt/locale/komodo_et.ts
+  qt/locale/komodo_eu_ES.ts
+  qt/locale/komodo_fa_IR.ts
+  qt/locale/komodo_fa.ts
+  qt/locale/komodo_fi.ts
+  qt/locale/komodo_fr_CA.ts
+  qt/locale/komodo_fr_FR.ts
+  qt/locale/komodo_fr.ts
+  qt/locale/komodo_gl.ts
+  qt/locale/komodo_he.ts
+  qt/locale/komodo_hi_IN.ts
+  qt/locale/komodo_hr.ts
+  qt/locale/komodo_hu.ts
+  qt/locale/komodo_id_ID.ts
+  qt/locale/komodo_it_IT.ts
+  qt/locale/komodo_it.ts
+  qt/locale/komodo_ja.ts
+  qt/locale/komodo_ka.ts
+  qt/locale/komodo_kk_KZ.ts
+  qt/locale/komodo_ko_KR.ts
+  qt/locale/komodo_ku_IQ.ts
+  qt/locale/komodo_ky.ts
+  qt/locale/komodo_la.ts
+  qt/locale/komodo_lt.ts
+  qt/locale/komodo_lv_LV.ts
+  qt/locale/komodo_mk_MK.ts
+  qt/locale/komodo_mn.ts
+  qt/locale/komodo_ms_MY.ts
+  qt/locale/komodo_nb.ts
+  qt/locale/komodo_ne.ts
+  qt/locale/komodo_nl.ts
+  qt/locale/komodo_pam.ts
+  qt/locale/komodo_pl.ts
+  qt/locale/komodo_pt_BR.ts
+  qt/locale/komodo_pt_PT.ts
+  qt/locale/komodo_ro_RO.ts
+  qt/locale/komodo_ro.ts
+  qt/locale/komodo_ru_RU.ts
+  qt/locale/komodo_ru.ts
+  qt/locale/komodo_sk.ts
+  qt/locale/komodo_sl_SI.ts
+  qt/locale/komodo_sq.ts
+  qt/locale/komodo_sr@latin.ts
+  qt/locale/komodo_sr.ts
+  qt/locale/komodo_sv.ts
+  qt/locale/komodo_ta.ts
+  qt/locale/komodo_th_TH.ts
+  qt/locale/komodo_tr_TR.ts
+  qt/locale/komodo_tr.ts
+  qt/locale/komodo_uk.ts
+  qt/locale/komodo_ur_PK.ts
+  qt/locale/komodo_uz@Cyrl.ts
+  qt/locale/komodo_vi.ts
+  qt/locale/komodo_vi_VN.ts
+  qt/locale/komodo_zh_CN.ts
+  qt/locale/komodo_zh_HK.ts
+  qt/locale/komodo_zh.ts
+  qt/locale/komodo_zh_TW.ts
+)

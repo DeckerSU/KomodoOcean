@@ -1,0 +1,117 @@
+#ifndef KOMODO_CONFIG_H
+#define KOMODO_CONFIG_H
+#define CLIENT_VERSION_BUILD @CLIENT_VERSION_BUILD@
+#define CLIENT_VERSION_IS_RELEASE @CLIENT_VERSION_IS_RELEASE@
+#define CLIENT_VERSION_MAJOR @CLIENT_VERSION_MAJOR@
+#define CLIENT_VERSION_MINOR @CLIENT_VERSION_MINOR@
+#define CLIENT_VERSION_REVISION @CLIENT_VERSION_REVISION@
+#define COPYRIGHT_HOLDERS @COPYRIGHT_HOLDERS@
+#define COPYRIGHT_HOLDERS_SUBSTITUTION @COPYRIGHT_HOLDERS_SUBSTITUTION@
+#define COPYRIGHT_YEAR @COPYRIGHT_YEAR@
+#cmakedefine AC_APPLE_UNIVERSAL_BUILD 1
+#cmakedefine ENABLE_AVX2 1
+#cmakedefine ENABLE_BIP70 1
+#cmakedefine ENABLE_MINING 1
+#cmakedefine ENABLE_RUST 1
+#cmakedefine ENABLE_SHANI 1
+#cmakedefine ENABLE_SSE41 1
+#cmakedefine ENABLE_WALLET 1
+#cmakedefine ENABLE_ZMQ 1
+#cmakedefine HAVE_BOOST 1
+#cmakedefine HAVE_BOOST_CHRONO 1
+#cmakedefine HAVE_BOOST_FILESYSTEM 1
+#cmakedefine HAVE_BOOST_PROGRAM_OPTIONS 1
+#cmakedefine HAVE_BOOST_SYSTEM 1
+#cmakedefine HAVE_BOOST_THREAD 1
+#cmakedefine HAVE_BOOST_UNIT_TEST_FRAMEWORK 1
+#cmakedefine HAVE_BYTESWAP_H 1
+#cmakedefine HAVE_CONSENSUS_LIB 1
+#cmakedefine01 HAVE_DECL_BE16TOH
+#cmakedefine01 HAVE_DECL_BE32TOH
+#cmakedefine01 HAVE_DECL_BE64TOH
+#cmakedefine01 HAVE_DECL_BSWAP_16
+#cmakedefine01 HAVE_DECL_BSWAP_32
+#cmakedefine01 HAVE_DECL_BSWAP_64
+#cmakedefine01 HAVE_DECL_EVP_MD_CTX_NEW
+#cmakedefine01 HAVE_DECL_HTOBE16
+#cmakedefine01 HAVE_DECL_HTOBE32
+#cmakedefine01 HAVE_DECL_HTOBE64
+#cmakedefine01 HAVE_DECL_HTOLE16
+#cmakedefine01 HAVE_DECL_HTOLE32
+#cmakedefine01 HAVE_DECL_HTOLE64
+#cmakedefine01 HAVE_DECL_LE16TOH
+#cmakedefine01 HAVE_DECL_LE32TOH
+#cmakedefine01 HAVE_DECL_LE64TOH
+#cmakedefine01 HAVE_DECL_STRERROR_R
+#cmakedefine01 HAVE_DECL_STRNLEN
+#cmakedefine HAVE_DLFCN_H 1
+#cmakedefine HAVE_ENDIAN_H 1
+#cmakedefine HAVE_FUNC_ATTRIBUTE_DLLEXPORT 1
+#cmakedefine HAVE_FUNC_ATTRIBUTE_DLLIMPORT 1
+#cmakedefine HAVE_FUNC_ATTRIBUTE_VISIBILITY 1
+#cmakedefine HAVE_GETADDRINFO_A 1
+#cmakedefine HAVE_INET_PTON 1
+#cmakedefine HAVE_INTTYPES_H 1
+#cmakedefine HAVE_LIBADVAPI32 1
+#cmakedefine HAVE_LIBCOMCTL32 1
+#cmakedefine HAVE_LIBCOMDLG32 1
+#cmakedefine HAVE_LIBCRYPT32 1
+#cmakedefine HAVE_LIBGDI32 1
+#cmakedefine HAVE_LIBIPHLPAPI 1
+#cmakedefine HAVE_LIBKERNEL32 1
+#cmakedefine HAVE_LIBMINGWTHRD 1
+#cmakedefine HAVE_LIBMSWSOCK 1
+#cmakedefine HAVE_LIBNTDLL 1
+#cmakedefine HAVE_LIBOLE32 1
+#cmakedefine HAVE_LIBOLEAUT32 1
+#cmakedefine HAVE_LIBRPCRT4 1
+#cmakedefine HAVE_LIBRT 1
+#cmakedefine HAVE_LIBSHELL32 1
+#cmakedefine HAVE_LIBSHLWAPI 1
+#cmakedefine HAVE_LIBSSP 1
+#cmakedefine HAVE_LIBUSER32 1
+#cmakedefine HAVE_LIBUUID 1
+#cmakedefine HAVE_LIBWINMM 1
+#cmakedefine HAVE_LIBWINSPOOL 1
+#cmakedefine HAVE_LIBWS2_32 1
+#cmakedefine HAVE_MEMORY_H 1
+#cmakedefine HAVE_MINIUPNPC_MINIUPNPC_H 1
+#cmakedefine HAVE_MINIUPNPC_MINIWGET_H 1
+#cmakedefine HAVE_MINIUPNPC_UPNPCOMMANDS_H 1
+#cmakedefine HAVE_MINIUPNPC_UPNPERRORS_H 1
+#cmakedefine HAVE_MSG_NOSIGNAL 1
+#cmakedefine HAVE_PTHREAD 1
+#cmakedefine HAVE_PTHREAD_PRIO_INHERIT 1
+#cmakedefine HAVE_STDINT_H 1
+#cmakedefine HAVE_STDIO_H 1
+#cmakedefine HAVE_STDLIB_H 1
+#cmakedefine HAVE_STRERROR_R 1
+#cmakedefine HAVE_STRINGS_H 1
+#cmakedefine HAVE_STRING_H 1
+#cmakedefine HAVE_SYS_ENDIAN_H 1
+#cmakedefine HAVE_SYS_PRCTL_H 1
+#cmakedefine HAVE_SYS_SELECT_H 1
+#cmakedefine HAVE_SYS_STAT_H 1
+#cmakedefine HAVE_SYS_TYPES_H 1
+#cmakedefine HAVE_UNISTD_H 1
+#cmakedefine HAVE_VISIBILITY_ATTRIBUTE 1
+#cmakedefine HAVE_WORKING_BOOST_SLEEP 1
+#cmakedefine HAVE_WORKING_BOOST_SLEEP_FOR 1
+#cmakedefine QT_QPA_PLATFORM_ANDROID 1
+#cmakedefine QT_QPA_PLATFORM_COCOA 1
+#cmakedefine QT_QPA_PLATFORM_MINIMAL 1
+#cmakedefine QT_QPA_PLATFORM_WINDOWS 1
+#cmakedefine QT_QPA_PLATFORM_XCB 1
+#cmakedefine QT_STATICPLUGIN 1
+#cmakedefine STDC_HEADERS 1
+#cmakedefine STRERROR_R_CHAR_P 1
+#cmakedefine USE_ASM 1
+#cmakedefine USE_QRCODE 1
+#cmakedefine USE_UPNP 1
+#define PACKAGE_NAME "KomodoOcean"
+#define PACKAGE_TARNAME "KomodoOcean"
+#define PACKAGE_VERSION "@PACKAGE_VERSION@"
+#define PACKAGE_STRING "KomodoOcean @PACKAGE_VERSION@"
+#define PACKAGE_BUGREPORT "https://github.com/KomodoPlatform/KomodoOcean/issues"
+#define PACKAGE_URL "https://komodoplatform.com/en/wallets.html"
+#endif

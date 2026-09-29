@@ -1,0 +1,52 @@
+cmake_minimum_required(VERSION 3.22)
+project(KomodoOceanBuild LANGUAGES C CXX)
+get_filename_component(KMD_REPOSITORY "${CMAKE_CURRENT_LIST_DIR}/.." REALPATH)
+include(Options.cmake)
+include(Snapshot.cmake)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_CROSSCOMPILING)
+  message(FATAL_ERROR "Currently supported: native Linux. Cross toolchains require platform validation.")
+endif()
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")
+  message(FATAL_ERROR "Currently validated platform: Linux x86_64")
+endif()
+file(REAL_PATH "${CMAKE_BINARY_DIR}" binary_path)
+if(binary_path STREQUAL KMD_REPOSITORY OR binary_path MATCHES "^${KMD_REPOSITORY}/(src|depends|cmake)(/|$)")
+  message(FATAL_ERROR "Use a separate build directory, outside src/, depends/ and cmake/")
+endif()
+find_program(KMD_MAKE NAMES gmake make REQUIRED)
+execute_process(COMMAND "${KMD_REPOSITORY}/depends/config.guess"
+  OUTPUT_VARIABLE KMD_HOST OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+
+if(NOT KMD_DEPENDS_PREFIX)
+  include(dependencies/BuildDepends.cmake)
+else()
+  file(REAL_PATH "${KMD_DEPENDS_PREFIX}" KMD_DEPENDS_PREFIX)
+  file(REAL_PATH "${KMD_REPOSITORY}/depends" legacy_depends)
+  string(FIND "${KMD_DEPENDS_PREFIX}/" "${legacy_depends}/" legacy_index)
+  if(legacy_index EQUAL 0)
+    message(FATAL_ERROR "The legacy depends prefix cannot be used by this build. Supply a separate prefix.")
+  endif()
+  add_custom_target(depends)
+endif()
+
+set(app_options)
+foreach(option BUILD_GUI BUILD_TESTS BUILD_CONSENSUS ENABLE_MINING ENABLE_ZMQ ENABLE_ASM HARDENING)
+  list(APPEND app_options "-DKMD_${option}:BOOL=${KMD_${option}}")
+endforeach()
+foreach(var CMAKE_C_COMPILER CMAKE_CXX_COMPILER CMAKE_AR CMAKE_RANLIB
+    CMAKE_C_FLAGS CMAKE_CXX_FLAGS CMAKE_EXE_LINKER_FLAGS CMAKE_BUILD_TYPE CMAKE_INSTALL_PREFIX)
+  list(APPEND app_options "-D${var}:STRING=${${var}}")
+endforeach()
+add_custom_target(application ALL
+  COMMAND "${CMAKE_COMMAND}" -S "${CMAKE_CURRENT_LIST_DIR}/app" -B "${CMAKE_BINARY_DIR}/app"
+    -G "${CMAKE_GENERATOR}" "-DKMD_DEPENDS_PREFIX:PATH=${KMD_DEPENDS_PREFIX}"
+    "-DKMD_OUTPUT_DIRECTORY:PATH=${CMAKE_BINARY_DIR}/bin" ${app_options}
+  COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}/app" --parallel "${KMD_JOBS}"
+  DEPENDS depends USES_TERMINAL VERBATIM)
+if(KMD_BUILD_TESTS)
+  enable_testing()
+  add_test(NAME komodo-test COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${CMAKE_BINARY_DIR}/app" --output-on-failure)
+endif()
+install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" --install \"${CMAKE_BINARY_DIR}/app\" --prefix \"\${CMAKE_INSTALL_PREFIX}\" COMMAND_ERROR_IS_FATAL ANY)")
+message(STATUS "Isolated dependencies: ${KMD_DEPENDS_PREFIX}")
+message(STATUS "Programs: ${CMAKE_BINARY_DIR}/bin")
