@@ -13,6 +13,7 @@ komodo_test_SOURCES = \
     test-komodo/test_buffered_file.cpp \
     test-komodo/test_sha256_crypto.cpp \
     test-komodo/test_script_standard_tests.cpp \
+    test-komodo/test_cltv_script.cpp \
     test-komodo/test_multisig_tests.cpp \
     test-komodo/test_merkle_tests.cpp \
     test-komodo/test_addrman.cpp \
